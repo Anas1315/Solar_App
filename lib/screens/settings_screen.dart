@@ -578,22 +578,14 @@ class _SettingsScreenState extends State<SettingsScreen>
             ),
             child: Column(
               children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Theme.of(context).primaryColor,
-                        Theme.of(context).primaryColor.withValues(alpha: 0.7),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(20),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Image.asset(
+                    'assets/icon/logo.png',
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.cover,
                   ),
-                  child: const Icon(Icons.energy_savings_leaf,
-                      size: 48, color: Colors.white),
                 ),
                 const SizedBox(height: 16),
                 const Text(

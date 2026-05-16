@@ -110,6 +110,30 @@ class PowerChart extends StatelessWidget {
     double yInterval,
   ) {
     return BarChartData(
+      barTouchData: BarTouchData(
+        touchTooltipData: BarTouchTooltipData(
+          getTooltipItem: (group, groupIndex, rod, rodIndex) {
+            return BarTooltipItem(
+              '${group.x.toInt().toString().padLeft(2, '0')}:00\n',
+              const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 10,
+              ),
+              children: <TextSpan>[
+                TextSpan(
+                  text: '${rod.toY.toStringAsFixed(1)} kW',
+                  style: const TextStyle(
+                    color: Colors.yellowAccent,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
       gridData: _gridData(yInterval),
       titlesData: _titlesData(),
       borderData: FlBorderData(show: false),
@@ -121,7 +145,7 @@ class PowerChart extends StatelessWidget {
           barRods: [
             BarChartRodData(
               toY: spot.y,
-              width: weeklyView ? 18 : 9,
+              width: weeklyView ? 16 : 5,
               color: color,
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(5),
@@ -154,8 +178,9 @@ class PowerChart extends StatelessWidget {
         sideTitles: SideTitles(
           showTitles: true,
           reservedSize: 30,
-          interval: 4,
+          interval: 6,
           getTitlesWidget: (value, meta) {
+            if (value > 23) return const SizedBox.shrink();
             final label = '${value.toInt().toString().padLeft(2, '0')}:00';
             return Padding(
               padding: const EdgeInsets.only(top: 8),

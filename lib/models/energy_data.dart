@@ -37,18 +37,16 @@ class EnergyData {
       current: _toDouble(json['current']),
       power: _toDouble(json['power']),
       ldrValue: _toInt(json['ldrValue']),
-      wapdaAvailable: json['wapdaAvailable'] ?? false,
-      isSunny: json['isSunny'] ?? false,
-      isDayTime: json['isDayTime'] ?? true,
-      wapdaRelayState: json['wapdaRelayState'] ?? false,
-      heavyLoadState: json['heavyLoadState'] ?? false,
-      wapdaAutoMode: json['wapdaAutoMode'] ?? true,
-      heavyLoadAutoMode: json['heavyLoadAutoMode'] ?? true,
+      wapdaAvailable: _toBool(json['wapdaAvailable']),
+      isSunny: _toBool(json['isSunny']),
+      isDayTime: _toBool(json['isDayTime'], fallback: true),
+      wapdaRelayState: _toBool(json['wapdaRelayState']),
+      heavyLoadState: _toBool(json['heavyLoadState']),
+      wapdaAutoMode: _toBool(json['wapdaAutoMode'], fallback: true),
+      heavyLoadAutoMode: _toBool(json['heavyLoadAutoMode'], fallback: true),
       currentHour: _toInt(json['currentHour'], fallback: 12),
-      lastUpdate: json['lastUpdate'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(json['lastUpdate'])
-          : DateTime.now(),
-      esp32Online: json['esp32Online'] ?? false,
+      lastUpdate: _toDateTime(json['lastUpdate']),
+      esp32Online: _toBool(json['esp32Online']),
     );
   }
 
@@ -114,6 +112,35 @@ double _toDouble(dynamic value) {
 int _toInt(dynamic value, {int fallback = 0}) {
   if (value is num) return value.toInt();
   return int.tryParse(value?.toString() ?? '') ?? fallback;
+}
+
+bool _toBool(dynamic value, {bool fallback = false}) {
+  if (value is bool) return value;
+  if (value is num) return value != 0;
+  final normalized = value?.toString().trim().toLowerCase();
+  if (normalized == 'true' || normalized == '1' || normalized == 'yes') {
+    return true;
+  }
+  if (normalized == 'false' || normalized == '0' || normalized == 'no') {
+    return false;
+  }
+  return fallback;
+}
+
+DateTime _toDateTime(dynamic value) {
+  if (value is DateTime) return value;
+  if (value is num) {
+    return DateTime.fromMillisecondsSinceEpoch(value.toInt());
+  }
+  if (value is String) {
+    final numeric = int.tryParse(value);
+    if (numeric != null) {
+      return DateTime.fromMillisecondsSinceEpoch(numeric);
+    }
+    final parsed = DateTime.tryParse(value);
+    if (parsed != null) return parsed;
+  }
+  return DateTime.now();
 }
 
 class HourlyData {

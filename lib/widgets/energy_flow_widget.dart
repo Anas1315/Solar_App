@@ -1,779 +1,1038 @@
-// import 'package:flutter/material.dart';
-// import 'package:smart_energy_controller/models/energy_data.dart';
-// import 'package:intl/intl.dart';
-
-// class EnergyFlowWidget extends StatelessWidget {
-//   final EnergyData? data;
-//   const EnergyFlowWidget({super.key, this.data});
-
-//   String _fmt(double? v) => '${((v ?? 0) / 1000).toStringAsFixed(0)} kW';
-
-//   @override
-//   Widget build(BuildContext context) {
-//     final isOnline = data?.esp32Online ?? false;
-//     final hasAlert = !(data?.wapdaAvailable ?? true);
-//     final lastUpdate = data?.lastUpdate ?? DateTime.now();
-//     final isSunny = data?.isSunny ?? true;
-//     final temp = ((data?.ldrValue ?? 500) / 50).round();
-
-//     return Container(
-//       decoration: BoxDecoration(
-//         color: Colors.white,
-//         borderRadius: BorderRadius.circular(16),
-//         boxShadow: [
-//           BoxShadow(
-//               color: Colors.black.withValues(alpha: 0.08),
-//               blurRadius: 16,
-//               offset: const Offset(0, 4))
-//         ],
-//       ),
-//       child: Column(
-//         mainAxisSize: MainAxisSize.min,
-//         children: [
-//           _buildStatusBar(isOnline, hasAlert, isSunny, temp),
-//           Expanded(child: _buildScene(context)),
-//           _buildLastUpdate(lastUpdate),
-//         ],
-//       ),
-//     );
-//   }
-
-//   Widget _buildStatusBar(bool isOnline, bool hasAlert, bool isSunny, int temp) {
-//     return Padding(
-//       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-//       child: Row(
-//         children: [
-//           Icon(Icons.wifi,
-//               size: 16, color: isOnline ? Colors.teal : Colors.grey),
-//           const SizedBox(width: 4),
-//           Text(
-//             isOnline ? 'Communication succeeded' : 'Disconnected',
-//             style: TextStyle(
-//                 fontSize: 11, color: isOnline ? Colors.black87 : Colors.red),
-//           ),
-//           const SizedBox(width: 12),
-//           Icon(Icons.notifications,
-//               size: 16, color: hasAlert ? Colors.red : Colors.orange),
-//           const SizedBox(width: 2),
-//           Text('Alert',
-//               style: TextStyle(
-//                   fontSize: 11, color: hasAlert ? Colors.red : Colors.orange)),
-//           const Spacer(),
-//           Icon(isSunny ? Icons.wb_sunny : Icons.cloud,
-//               size: 20, color: isSunny ? Colors.orange : Colors.blueGrey),
-//           const SizedBox(width: 4),
-//           Text('$temp°C',
-//               style:
-//                   const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-//         ],
-//       ),
-//     );
-//   }
-
-//   Widget _buildScene(BuildContext context) {
-//     return LayoutBuilder(builder: (context, constraints) {
-//       final w = constraints.maxWidth;
-//       final h = constraints.maxHeight;
-//       return Stack(
-//         clipBehavior: Clip.none,
-//         children: [
-//           // Sky
-//           Positioned.fill(
-//             child: CustomPaint(painter: _SkyPainter()),
-//           ),
-//           // Ground
-//           Positioned(
-//             left: 0,
-//             right: 0,
-//             bottom: 0,
-//             height: h * 0.22,
-//             child: Container(
-//               decoration: BoxDecoration(
-//                 gradient: LinearGradient(
-//                   begin: Alignment.topCenter,
-//                   end: Alignment.bottomCenter,
-//                   colors: [const Color(0xFF8BC34A), const Color(0xFF689F38)],
-//                 ),
-//                 borderRadius: const BorderRadius.only(
-//                   bottomLeft: Radius.circular(16),
-//                   bottomRight: Radius.circular(16),
-//                 ),
-//               ),
-//             ),
-//           ),
-//           // Flow lines
-//           Positioned.fill(
-//             child: CustomPaint(painter: _FlowLinesPainter(w: w, h: h)),
-//           ),
-//           // Solar Panel
-//           Positioned(
-//             left: w * 0.02,
-//             bottom: h * 0.18,
-//             child: _buildSolarPanel(h),
-//           ),
-//           // Production label
-//           Positioned(
-//             left: w * 0.02,
-//             bottom: h * 0.50,
-//             child: _buildLabel(_fmt(data?.power), 'Production', Colors.black87),
-//           ),
-//           // House
-//           Positioned(
-//             left: w * 0.28,
-//             bottom: h * 0.18,
-//             child: _buildHouse(w * 0.40, h * 0.42),
-//           ),
-//           // Consumption label
-//           Positioned(
-//             left: w * 0.30,
-//             top: h * 0.08,
-//             child:
-//                 _buildLabel(_fmt(data?.power), 'Consumption', Colors.black87),
-//           ),
-//           // Battery
-//           Positioned(
-//             right: w * 0.28,
-//             bottom: h * 0.18,
-//             child: _buildBattery(h),
-//           ),
-//           // Battery label
-//           Positioned(
-//             right: w * 0.22,
-//             bottom: h * 0.50,
-//             child: _buildLabel(_fmt(data?.power), 'Battery', Colors.black87),
-//           ),
-//           // Grid Tower
-//           Positioned(
-//             right: w * 0.02,
-//             bottom: h * 0.18,
-//             child: _buildGridTower(h),
-//           ),
-//           // Grid label
-//           Positioned(
-//             right: w * 0.01,
-//             top: h * 0.12,
-//             child: _buildLabel(_fmt(data?.power), 'Grid', Colors.black87),
-//           ),
-//           // Inverter
-//           Positioned(
-//             left: w * 0.38,
-//             bottom: h * 0.02,
-//             child: _buildInverter(w * 0.24),
-//           ),
-//         ],
-//       );
-//     });
-//   }
-
-//   Widget _buildLabel(String value, String label, Color c) {
-//     return Column(
-//       children: [
-//         Text(value,
-//             style:
-//                 TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: c)),
-//         Text(label, style: TextStyle(fontSize: 11, color: c.withValues(alpha: 0.7))),
-//       ],
-//     );
-//   }
-
-//   Widget _buildSolarPanel(double h) {
-//     return SizedBox(
-//       width: 56,
-//       height: h * 0.22,
-//       child: CustomPaint(painter: _SolarPanelPainter()),
-//     );
-//   }
-
-//   Widget _buildHouse(double w, double h) {
-//     return SizedBox(
-//       width: w,
-//       height: h,
-//       child: CustomPaint(painter: _HousePainter()),
-//     );
-//   }
-
-//   Widget _buildBattery(double h) {
-//     return SizedBox(
-//       width: 44,
-//       height: h * 0.14,
-//       child: CustomPaint(painter: _BatteryPainter()),
-//     );
-//   }
-
-//   Widget _buildGridTower(double h) {
-//     return SizedBox(
-//       width: 50,
-//       height: h * 0.30,
-//       child: CustomPaint(painter: _GridTowerPainter()),
-//     );
-//   }
-
-//   Widget _buildInverter(double w) {
-//     return Container(
-//       width: w,
-//       height: w * 0.7,
-//       decoration: BoxDecoration(
-//         shape: BoxShape.circle,
-//         border: Border.all(color: const Color(0xFF1A237E), width: 2.5),
-//         color: Colors.white,
-//       ),
-//       child: Center(
-//         child: Container(
-//           width: w * 0.38,
-//           height: w * 0.30,
-//           decoration: BoxDecoration(
-//             color: const Color(0xFFFFC107),
-//             borderRadius: BorderRadius.circular(3),
-//           ),
-//           child: const Center(
-//             child: Text('SOLAR',
-//                 style: TextStyle(
-//                     fontSize: 5,
-//                     fontWeight: FontWeight.bold,
-//                     color: Colors.black54)),
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-
-//   Widget _buildLastUpdate(DateTime dt) {
-//     return Padding(
-//       padding: const EdgeInsets.symmetric(vertical: 8),
-//       child: Text(
-//         'Last update:  ${DateFormat('yyyy/MM/dd HH:mm:ss').format(dt)}',
-//         style: const TextStyle(fontSize: 11, color: Colors.black54),
-//       ),
-//     );
-//   }
-// }
-
-// // --- Custom Painters ---
-
-// class _SkyPainter extends CustomPainter {
-//   @override
-//   void paint(Canvas canvas, Size size) {
-//     final rect = Rect.fromLTWH(0, 0, size.width, size.height * 0.8);
-//     final gradient = LinearGradient(
-//       begin: Alignment.topCenter,
-//       end: Alignment.bottomCenter,
-//       colors: [
-//         const Color(0xFFE3F2FD),
-//         const Color(0xFFBBDEFB),
-//         const Color(0xFFE8F5E9)
-//       ],
-//     );
-//     canvas.drawRect(rect, Paint()..shader = gradient.createShader(rect));
-//     // Clouds
-//     final cp = Paint()..color = Colors.white.withValues(alpha: 0.7);
-//     _drawCloud(canvas, Offset(size.width * 0.2, size.height * 0.15), 30, cp);
-//     _drawCloud(canvas, Offset(size.width * 0.7, size.height * 0.10), 22, cp);
-//   }
-
-//   void _drawCloud(Canvas canvas, Offset pos, double r, Paint p) {
-//     canvas.drawCircle(pos, r, p);
-//     canvas.drawCircle(pos + Offset(-r * 0.7, r * 0.2), r * 0.7, p);
-//     canvas.drawCircle(pos + Offset(r * 0.7, r * 0.15), r * 0.8, p);
-//     canvas.drawCircle(pos + Offset(0, r * 0.3), r * 0.6, p);
-//   }
-
-//   @override
-//   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-// }
-
-// class _FlowLinesPainter extends CustomPainter {
-//   final double w, h;
-//   _FlowLinesPainter({required this.w, required this.h});
-
-//   @override
-//   void paint(Canvas canvas, Size size) {
-//     final paint = Paint()
-//       ..color = const Color(0xFF4CAF50)
-//       ..strokeWidth = 2.5
-//       ..style = PaintingStyle.stroke;
-
-//     final groundY = h * 0.80;
-//     final inverterX = w * 0.50;
-//     final inverterY = groundY + h * 0.02;
-
-//     // Solar -> Inverter (along ground)
-//     final solarX = w * 0.08;
-//     canvas.drawLine(Offset(solarX, groundY), Offset(solarX, inverterY), paint);
-//     canvas.drawLine(
-//         Offset(solarX, inverterY), Offset(inverterX - 20, inverterY), paint);
-//     _drawArrow(canvas, Offset(solarX, groundY - 4), true, paint);
-
-//     // House <- Inverter (up from inverter)
-//     final houseX = w * 0.48;
-//     final houseY = groundY - h * 0.02;
-//     canvas.drawLine(
-//         Offset(houseX, inverterY - 15), Offset(houseX, houseY), paint);
-//     _drawArrow(canvas, Offset(houseX, houseY), true, paint);
-
-//     // Battery -> from inverter line
-//     final batX = w * 0.64;
-//     canvas.drawLine(
-//         Offset(inverterX + 20, inverterY), Offset(batX, inverterY), paint);
-//     canvas.drawLine(Offset(batX, inverterY), Offset(batX, groundY), paint);
-//     _drawArrow(canvas, Offset(batX, groundY), true, paint);
-
-//     // Grid -> from battery line
-//     final gridX = w * 0.92;
-//     canvas.drawLine(Offset(batX, inverterY), Offset(gridX, inverterY), paint);
-//     canvas.drawLine(Offset(gridX, inverterY), Offset(gridX, groundY), paint);
-//     _drawArrow(canvas, Offset(gridX, groundY), true, paint);
-//   }
-
-//   void _drawArrow(Canvas canvas, Offset tip, bool up, Paint paint) {
-//     final dir = up ? 1.0 : -1.0;
-//     final path = Path()
-//       ..moveTo(tip.dx - 5, tip.dy + 8 * dir)
-//       ..lineTo(tip.dx, tip.dy)
-//       ..lineTo(tip.dx + 5, tip.dy + 8 * dir);
-//     canvas.drawPath(path, paint..style = PaintingStyle.stroke);
-//     paint.style = PaintingStyle.stroke;
-//   }
-
-//   @override
-//   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-// }
-
-// class _SolarPanelPainter extends CustomPainter {
-//   @override
-//   void paint(Canvas canvas, Size size) {
-//     final w = size.width, h = size.height;
-//     // Pole
-//     canvas.drawRect(
-//       Rect.fromLTWH(w * 0.42, h * 0.55, w * 0.16, h * 0.45),
-//       Paint()..color = const Color(0xFF9E9E9E),
-//     );
-//     // Panel body (tilted look)
-//     final panelPath = Path()
-//       ..moveTo(0, h * 0.15)
-//       ..lineTo(w, h * 0.05)
-//       ..lineTo(w, h * 0.55)
-//       ..lineTo(0, h * 0.55)
-//       ..close();
-//     canvas.drawPath(panelPath, Paint()..color = const Color(0xFF1565C0));
-//     canvas.drawPath(
-//         panelPath,
-//         Paint()
-//           ..color = Colors.black
-//           ..style = PaintingStyle.stroke
-//           ..strokeWidth = 1);
-//     // Grid lines on panel
-//     final gridPaint = Paint()
-//       ..color = Colors.white.withValues(alpha: 0.3)
-//       ..strokeWidth = 0.8;
-//     for (var i = 1; i < 3; i++) {
-//       final y = h * 0.15 + (h * 0.40 / 3) * i;
-//       canvas.drawLine(Offset(0, y), Offset(w, y - 3), gridPaint);
-//     }
-//     for (var i = 1; i < 4; i++) {
-//       final x = w / 4 * i;
-//       canvas.drawLine(Offset(x, h * 0.08), Offset(x, h * 0.55), gridPaint);
-//     }
-//   }
-
-//   @override
-//   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-// }
-
-// class _HousePainter extends CustomPainter {
-//   @override
-//   void paint(Canvas canvas, Size size) {
-//     final w = size.width, h = size.height;
-//     // Roof
-//     final roofPath = Path()
-//       ..moveTo(w * 0.5, 0)
-//       ..lineTo(w * 1.05, h * 0.40)
-//       ..lineTo(-w * 0.05, h * 0.40)
-//       ..close();
-//     canvas.drawPath(roofPath, Paint()..color = const Color(0xFF80CBC4));
-//     canvas.drawPath(
-//         roofPath,
-//         Paint()
-//           ..color = const Color(0xFF4DB6AC)
-//           ..style = PaintingStyle.stroke
-//           ..strokeWidth = 1.5);
-//     // Wall
-//     canvas.drawRect(
-//       Rect.fromLTWH(w * 0.08, h * 0.40, w * 0.84, h * 0.58),
-//       Paint()..color = const Color(0xFFF5F5F5),
-//     );
-//     canvas.drawRect(
-//       Rect.fromLTWH(w * 0.08, h * 0.40, w * 0.84, h * 0.58),
-//       Paint()
-//         ..color = const Color(0xFFBDBDBD)
-//         ..style = PaintingStyle.stroke
-//         ..strokeWidth = 1,
-//     );
-//     // Windows
-//     final winPaint = Paint()..color = const Color(0xFFFFC107);
-//     final winBorder = Paint()
-//       ..color = const Color(0xFFFF8F00)
-//       ..style = PaintingStyle.stroke
-//       ..strokeWidth = 1.5;
-//     // Left window
-//     canvas.drawRect(
-//         Rect.fromLTWH(w * 0.15, h * 0.50, w * 0.18, h * 0.22), winPaint);
-//     canvas.drawRect(
-//         Rect.fromLTWH(w * 0.15, h * 0.50, w * 0.18, h * 0.22), winBorder);
-//     canvas.drawLine(
-//         Offset(w * 0.24, h * 0.50), Offset(w * 0.24, h * 0.72), winBorder);
-//     canvas.drawLine(
-//         Offset(w * 0.15, h * 0.61), Offset(w * 0.33, h * 0.61), winBorder);
-//     // Right window
-//     canvas.drawRect(
-//         Rect.fromLTWH(w * 0.60, h * 0.50, w * 0.18, h * 0.22), winPaint);
-//     canvas.drawRect(
-//         Rect.fromLTWH(w * 0.60, h * 0.50, w * 0.18, h * 0.22), winBorder);
-//     canvas.drawLine(
-//         Offset(w * 0.69, h * 0.50), Offset(w * 0.69, h * 0.72), winBorder);
-//     canvas.drawLine(
-//         Offset(w * 0.60, h * 0.61), Offset(w * 0.78, h * 0.61), winBorder);
-//     // Door
-//     canvas.drawRect(Rect.fromLTWH(w * 0.40, h * 0.60, w * 0.15, h * 0.38),
-//         Paint()..color = const Color(0xFF8D6E63));
-//     canvas.drawRect(
-//       Rect.fromLTWH(w * 0.40, h * 0.60, w * 0.15, h * 0.38),
-//       Paint()
-//         ..color = const Color(0xFF6D4C41)
-//         ..style = PaintingStyle.stroke
-//         ..strokeWidth = 1,
-//     );
-//   }
-
-//   @override
-//   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-// }
-
-// class _BatteryPainter extends CustomPainter {
-//   @override
-//   void paint(Canvas canvas, Size size) {
-//     final w = size.width, h = size.height;
-//     // Body
-//     final body = RRect.fromRectAndRadius(
-//         Rect.fromLTWH(0, h * 0.1, w, h * 0.9), const Radius.circular(3));
-//     canvas.drawRRect(body, Paint()..color = const Color(0xFF424242));
-//     canvas.drawRRect(
-//         body,
-//         Paint()
-//           ..color = Colors.black
-//           ..style = PaintingStyle.stroke
-//           ..strokeWidth = 1);
-//     // Terminal
-//     canvas.drawRect(Rect.fromLTWH(w * 0.15, 0, w * 0.15, h * 0.12),
-//         Paint()..color = const Color(0xFF9E9E9E));
-//     canvas.drawRect(Rect.fromLTWH(w * 0.60, 0, w * 0.15, h * 0.12),
-//         Paint()..color = const Color(0xFFEF5350));
-//     // Label
-//     final tp = TextPainter(
-//       text: const TextSpan(
-//           text: '12V',
-//           style: TextStyle(
-//               color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
-//       //textDirection: TextDirection.ltr,
-//     )..layout();
-//     tp.paint(canvas, Offset((w - tp.width) / 2, h * 0.45));
-//   }
-
-//   @override
-//   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-// }
-
-// class _GridTowerPainter extends CustomPainter {
-//   @override
-//   void paint(Canvas canvas, Size size) {
-//     final w = size.width, h = size.height;
-//     final paint = Paint()
-//       ..color = const Color(0xFF616161)
-//       ..strokeWidth = 2.5
-//       ..style = PaintingStyle.stroke;
-//     // Main pole
-//     canvas.drawLine(Offset(w * 0.5, 0), Offset(w * 0.5, h), paint);
-//     // Cross arms
-//     canvas.drawLine(
-//         Offset(w * 0.1, h * 0.10), Offset(w * 0.9, h * 0.10), paint);
-//     canvas.drawLine(
-//         Offset(w * 0.2, h * 0.25), Offset(w * 0.8, h * 0.25), paint);
-//     // Wires drooping
-//     final wirePaint = Paint()
-//       ..color = const Color(0xFF424242)
-//       ..strokeWidth = 1
-//       ..style = PaintingStyle.stroke;
-//     final lWire = Path()
-//       ..moveTo(w * 0.1, h * 0.10)
-//       ..quadraticBezierTo(0, h * 0.20, w * 0.1, h * 0.25);
-//     canvas.drawPath(lWire, wirePaint);
-//     final rWire = Path()
-//       ..moveTo(w * 0.9, h * 0.10)
-//       ..quadraticBezierTo(w, h * 0.20, w * 0.9, h * 0.25);
-//     canvas.drawPath(rWire, wirePaint);
-//     // Support braces
-//     canvas.drawLine(Offset(w * 0.35, h * 0.4), Offset(w * 0.5, h * 0.6),
-//         paint..strokeWidth = 1.5);
-//     canvas.drawLine(Offset(w * 0.65, h * 0.4), Offset(w * 0.5, h * 0.6), paint);
-//     // Base - small green bushes
-//     final bushPaint = Paint()..color = const Color(0xFF66BB6A);
-//     canvas.drawCircle(Offset(w * 0.3, h * 0.98), 6, bushPaint);
-//     canvas.drawCircle(Offset(w * 0.7, h * 0.98), 5, bushPaint);
-//     canvas.drawCircle(Offset(w * 0.5, h * 0.96), 7, bushPaint);
-//   }
-
-//   @override
-//   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-// }
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:smart_energy_controller/models/energy_data.dart';
+import 'package:smart_energy_controller/utils/theme.dart';
 
-class EnergyFlowWidget extends StatelessWidget {
-  final EnergyData? data;
+class EnergyFlowWidget extends StatefulWidget {
+  final EnergyValues values;
 
-  const EnergyFlowWidget({super.key, this.data});
+  const EnergyFlowWidget({super.key, required this.values});
+
+  @override
+  State<EnergyFlowWidget> createState() => _EnergyFlowWidgetState();
+}
+
+class _EnergyFlowWidgetState extends State<EnergyFlowWidget>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2600),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    const consumption = 456.0;
-    const production = 456.0;
-    const battery = 456.0;
-    const grid = 456.0;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Alert row
-          Row(
-            children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFF6B6B).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.warning_amber_rounded,
-                        color: Color(0xFFFF6B6B), size: 16),
-                    SizedBox(width: 6),
-                    Text(
-                      'Alert',
-                      style: TextStyle(
-                        color: Color(0xFFFF6B6B),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Spacer(),
-              const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.thermostat, color: Colors.black54, size: 16),
-                  SizedBox(width: 4),
-                  Text(
-                    '9°C',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          // Center circle (Inverter/Hub)
-          Center(
-            child: Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: const Color(0xFF1A1A2E),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: const Center(
-                child: Icon(Icons.electrical_services,
-                    color: Colors.white, size: 40),
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Flow arrows and values - Row 1: Production (left arrow to center)
-          Row(
-            children: [
-              // Production box (left side)
-              Expanded(
-                child: _buildFlowCard(
-                  icon: Icons.solar_power,
-                  iconColor: const Color(0xFFFFB74D),
-                  label: 'Production',
-                  value: '${production.toInt()} kW',
-                  arrowDirection: ArrowDirection.right,
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Center spacer
-              const SizedBox(width: 100),
-              const SizedBox(width: 12),
-              // Empty for symmetry
-              const Expanded(child: SizedBox()),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-
-          // Row 2: Battery (left) and Consumption (right)
-          Row(
-            children: [
-              // Battery box
-              Expanded(
-                child: _buildFlowCard(
-                  icon: Icons.battery_5_bar,
-                  iconColor: const Color(0xFF4CAF50),
-                  label: 'Battery',
-                  value: '${battery.toInt()} kW',
-                  arrowDirection: ArrowDirection.right,
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Center icon
-              Container(
-                width: 100,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE8ECF1),
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: const Center(
-                  child: Icon(Icons.sync_alt, color: Colors.black54, size: 20),
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Consumption box
-              Expanded(
-                child: _buildFlowCard(
-                  icon: Icons.home,
-                  iconColor: const Color(0xFF2196F3),
-                  label: 'Consumption',
-                  value: '${consumption.toInt()} kW',
-                  arrowDirection: ArrowDirection.left,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-
-          // Row 3: Grid (left arrow to center)
-          Row(
-            children: [
-              // Grid box
-              Expanded(
-                child: _buildFlowCard(
-                  icon: Icons.electrical_services,
-                  iconColor: const Color(0xFF9C27B0),
-                  label: 'Grid',
-                  value: '${grid.toInt()} kW',
-                  arrowDirection: ArrowDirection.right,
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Center spacer
-              const SizedBox(width: 100),
-              const SizedBox(width: 12),
-              // Empty for symmetry
-              const Expanded(child: SizedBox()),
-            ],
-          ),
-        ],
-      ),
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return EnergyScene(
+          progress: _controller.value,
+          values: widget.values,
+        );
+      },
     );
   }
+}
 
-  Widget _buildFlowCard({
-    required IconData icon,
-    required Color iconColor,
-    required String label,
-    required String value,
-    required ArrowDirection arrowDirection,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F7FA),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: iconColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+class EnergyScene extends StatelessWidget {
+  final double progress;
+  final EnergyValues values;
+
+  const EnergyScene({
+    super.key,
+    required this.progress,
+    required this.values,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final height = constraints.maxHeight;
+        final compact = width < 380;
+        final points = ScenePoints(Size(width, height));
+
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned.fill(
+              child: CustomPaint(
+                painter: EnergyScenePainter(
+                  progress: progress,
+                  values: values,
                 ),
-                child: Icon(icon, color: iconColor, size: 24),
               ),
-              if (arrowDirection == ArrowDirection.right)
-                const Icon(Icons.arrow_forward, color: Colors.black54, size: 20)
-              else if (arrowDirection == ArrowDirection.left)
-                const Icon(Icons.arrow_back, color: Colors.black54, size: 20),
+            ),
+            PositionedLabel(
+              left: math.max(10, points.solarPanel.left - 2),
+              top: points.solarPanel.top - (compact ? 70 : 82),
+              child: MetricLabel(
+                valueText: values.ldrValue.toString(),
+                unit: 'LDR',
+                label: 'Production',
+                align: TextAlign.left,
+                compact: compact,
+                brightText: !values.isDayTime,
+              ),
+            ),
+            PositionedLabel(
+              left: points.houseRect.left + points.houseRect.width * 0.22 + 20,
+              top: points.houseRect.top - (compact ? 54 : 68),
+              child: MetricLabel(
+                valueText: formatNumber(values.consumptionKw),
+                unit: 'kW',
+                label: 'Consumption',
+                align: TextAlign.center,
+                compact: compact,
+                brightText: !values.isDayTime,
+              ),
+            ),
+            PositionedLabel(
+              right: math.max(12, width - points.gridPoleBase.dx - 25),
+              top: points.gridPoleBase.dy - 190,
+              child: MetricLabel(
+                valueText: formatNumber(values.gridVoltage),
+                unit: 'V',
+                label: 'Grid Voltage',
+                align: TextAlign.right,
+                compact: compact,
+                brightText: !values.isDayTime,
+              ),
+            ),
+            Positioned(
+              left: points.smartLoadInput.dx - 62,
+              top: points.smartLoadInput.dy + 8,
+              child: LoadLineLabel(
+                text: '',
+                color: AppTheme.primaryDark,
+                brightText: !values.isDayTime,
+              ),
+            ),
+            Positioned(
+              left: points.heavyLoadInput.dx + 12,
+              top: points.heavyLoadInput.dy + 8,
+              child: LoadLineLabel(
+                text: '',
+                color: values.heavyLoadOn
+                    ? const Color(0xFF1E88E5)
+                    : AppTheme.error,
+                brightText: !values.isDayTime,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class PositionedLabel extends StatelessWidget {
+  final double? left;
+  final double? right;
+  final double top;
+  final Widget child;
+
+  const PositionedLabel({
+    super.key,
+    this.left,
+    this.right,
+    required this.top,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(left: left, right: right, top: top, child: child);
+  }
+}
+
+class MetricLabel extends StatelessWidget {
+  final String valueText;
+  final String unit;
+  final String label;
+  final TextAlign align;
+  final bool compact;
+  final bool brightText;
+
+  const MetricLabel({
+    super.key,
+    required this.valueText,
+    required this.unit,
+    required this.label,
+    required this.align,
+    required this.compact,
+    required this.brightText,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final valueColor = brightText ? Colors.white : const Color(0xFF111827);
+    final labelColor = brightText ? Colors.white70 : const Color(0xFF6A7D87);
+
+    return Column(
+      crossAxisAlignment: align == TextAlign.right
+          ? CrossAxisAlignment.end
+          : align == TextAlign.left
+              ? CrossAxisAlignment.start
+              : CrossAxisAlignment.center,
+      children: [
+        RichText(
+          textAlign: align,
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: valueText,
+                style: TextStyle(
+                  fontSize: compact ? 22 : 28,
+                  height: 1,
+                  fontWeight: FontWeight.w900,
+                  color: valueColor,
+                ),
+              ),
+              TextSpan(
+                text: ' $unit',
+                style: TextStyle(
+                  fontSize: compact ? 12 : 15,
+                  fontWeight: FontWeight.w700,
+                  color: labelColor,
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.black54,
-              fontWeight: FontWeight.w500,
-            ),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          label,
+          textAlign: align,
+          style: TextStyle(
+            fontSize: compact ? 12 : 16,
+            color: labelColor,
+            fontWeight: FontWeight.w500,
           ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-        ],
+        ),
+      ],
+    );
+  }
+}
+
+class LoadLineLabel extends StatelessWidget {
+  final String text;
+  final Color color;
+  final bool brightText;
+
+  const LoadLineLabel({
+    super.key,
+    required this.text,
+    required this.color,
+    required this.brightText,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: TextStyle(
+        color: brightText ? Colors.white.withValues(alpha: 0.86) : color,
+        fontSize: 11,
+        fontWeight: FontWeight.w800,
       ),
     );
   }
 }
 
-enum ArrowDirection {
-  left,
-  right,
+class EnergyScenePainter extends CustomPainter {
+  final double progress;
+  final EnergyValues values;
+
+  EnergyScenePainter({
+    required this.progress,
+    required this.values,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final points = ScenePoints(size);
+    _drawSky(canvas, size);
+    _drawWeather(canvas, size, points);
+    _drawLandscape(canvas, size, points);
+    _drawSolarPanel(canvas, points.solarPanel);
+    _drawHome(canvas, points.houseRect);
+    _drawEnergyLines(canvas, size, points);
+    _drawBattery(canvas, points.batteryRect);
+    _drawGrid(canvas, points.gridPoleBase, points.groundY);
+    _drawInverter(canvas, points.inverter);
+  }
+
+  void _drawSky(Canvas canvas, Size size) {
+    final colors = !values.isDayTime
+        ? const [
+            Color(0xFF111827),
+            Color(0xFF172554),
+            Color(0xFF0F172A),
+          ]
+        : values.isStormy
+            ? const [
+                Color(0xFF7E8FA1),
+                Color(0xFFAAB7C2),
+                Color(0xFFB7D0C1),
+              ]
+            : values.isSunny
+                ? const [
+                    Color(0xFFE8F7FF),
+                    Color(0xFFF8FDFF),
+                    Color(0xFFB7DEC7),
+                  ]
+                : const [
+                    Color(0xFFD8E6F0),
+                    Color(0xFFEFF5F8),
+                    Color(0xFFB7D0C1),
+                  ];
+
+    final paint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: colors,
+        stops: const [0, 0.6, 1],
+      ).createShader(Offset.zero & size);
+    canvas.drawRect(Offset.zero & size, paint);
+  }
+
+  void _drawWeather(Canvas canvas, Size size, ScenePoints points) {
+    if (!values.isDayTime) {
+      _drawMoon(canvas, Offset(size.width * 0.8, size.height * 0.14));
+      _drawStars(canvas, size);
+      _drawClouds(canvas, size);
+      _drawShootingStars(canvas, size);
+      return;
+    }
+
+    if (values.isSunny) {
+      final sun = Offset(size.width * 0.79, size.height * 0.16);
+      _drawSun(canvas, sun);
+      _drawSunRaysToPanel(canvas, sun, points.solarPanel);
+    } else {
+      _drawClouds(canvas, size);
+      if (values.isStormy) {
+        _drawRain(canvas, size);
+        _drawLightning(canvas, size);
+      }
+    }
+  }
+
+  void _drawSun(Canvas canvas, Offset center) {
+    final intensity = values.sunIntensity;
+    final pulse =
+        0.78 + intensity * 0.24 + math.sin(progress * math.pi * 2) * 0.06;
+    final glowRadius = 36 + intensity * 42;
+    final glowPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          const Color(0xFFFFD54F).withValues(alpha: 0.12 + intensity * 0.48),
+          const Color(0xFFFFD54F).withValues(alpha: 0),
+        ],
+      ).createShader(
+          Rect.fromCircle(center: center, radius: glowRadius * pulse));
+    canvas.drawCircle(center, glowRadius * pulse, glowPaint);
+    canvas.drawCircle(
+        center, 16 + intensity * 10, Paint()..color = const Color(0xFFFFC107));
+
+    final rayPaint = Paint()
+      ..color =
+          const Color(0xFFFFB300).withValues(alpha: 0.22 + intensity * 0.58)
+      ..strokeWidth = 1.6 + intensity * 2.1
+      ..strokeCap = StrokeCap.round;
+    final rayCount = 6 + (intensity * 8).round();
+    for (int i = 0; i < rayCount; i++) {
+      final angle = progress * math.pi * 2 + i * math.pi * 2 / rayCount;
+      final start = center +
+          Offset(math.cos(angle) * (25 + intensity * 9),
+              math.sin(angle) * (25 + intensity * 9));
+      final end = center +
+          Offset(math.cos(angle) * (36 + intensity * 19),
+              math.sin(angle) * (36 + intensity * 19));
+      canvas.drawLine(start, end, rayPaint);
+    }
+  }
+
+  void _drawSunRaysToPanel(Canvas canvas, Offset sun, Rect panel) {
+    final intensity = values.sunIntensity;
+    final paint = Paint()
+      ..color =
+          const Color(0xFFFFD166).withValues(alpha: 0.08 + intensity * 0.28)
+      ..strokeWidth = 1.2 + intensity * 2.2
+      ..strokeCap = StrokeCap.round;
+    final rayCount = 2 + (intensity * 5).round();
+    for (int i = 0; i < rayCount; i++) {
+      final t = (i + 1) / (rayCount + 1);
+      final target = Offset(
+        panel.left + panel.width * t,
+        panel.top +
+            panel.height *
+                (0.2 + 0.08 * math.sin(progress * intensity * 6 + i)),
+      );
+      final dashProgress = ((progress * intensity) + i * 0.16) % 1;
+      final moving = Offset.lerp(sun, target, dashProgress)!;
+      canvas.drawLine(sun, target, paint);
+      canvas.drawCircle(moving, 2.0 + intensity * 2.2,
+          Paint()..color = const Color(0xFFFFF59D));
+    }
+  }
+
+  void _drawClouds(Canvas canvas, Size size) {
+    final cloudPaint = Paint()
+      ..color = Colors.white.withValues(alpha: values.isStormy ? 0.48 : 0.72);
+    for (int i = 0; i < 4; i++) {
+      final drift = ((progress * 0.4 + i * 0.23) % 1) * (size.width + 180) - 90;
+      final y = size.height * (0.1 + i * 0.06);
+      _drawCloud(canvas, Offset(drift, y), 0.75 + i * 0.12, cloudPaint);
+    }
+  }
+
+  void _drawCloud(Canvas canvas, Offset origin, double scale, Paint paint) {
+    canvas.drawCircle(
+        origin + Offset(32 * scale, 22 * scale), 23 * scale, paint);
+    canvas.drawCircle(
+        origin + Offset(58 * scale, 14 * scale), 30 * scale, paint);
+    canvas.drawCircle(
+        origin + Offset(88 * scale, 24 * scale), 22 * scale, paint);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(origin.dx + 20 * scale, origin.dy + 22 * scale,
+            92 * scale, 25 * scale),
+        Radius.circular(18 * scale),
+      ),
+      paint,
+    );
+  }
+
+  void _drawRain(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFF3B82F6).withValues(alpha: 0.55)
+      ..strokeWidth = 1.6
+      ..strokeCap = StrokeCap.round;
+    for (int i = 0; i < 34; i++) {
+      final x = (i * 37 + progress * 180) % (size.width + 40) - 20;
+      final y = (i * 53 + progress * 440) % (size.height * 0.62);
+      canvas.drawLine(Offset(x, y), Offset(x - 8, y + 18), paint);
+    }
+  }
+
+  void _drawLightning(Canvas canvas, Size size) {
+    if (progress < 0.08 || (progress > 0.52 && progress < 0.59)) {
+      final path = Path()
+        ..moveTo(size.width * 0.66, size.height * 0.17)
+        ..lineTo(size.width * 0.58, size.height * 0.3)
+        ..lineTo(size.width * 0.63, size.height * 0.3)
+        ..lineTo(size.width * 0.55, size.height * 0.45);
+      final paint = Paint()
+        ..color = const Color(0xFFFFF176)
+        ..strokeWidth = 4
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round;
+      canvas.drawPath(path, paint);
+    }
+  }
+
+  void _drawShootingStars(Canvas canvas, Size size) {
+    if (progress > 0.3 && progress < 0.6) {
+      final t = (progress - 0.3) / 0.3; // 0.0 to 1.0
+      final start = Offset(size.width * 0.8, size.height * 0.1);
+      final end = start + const Offset(-150, 100);
+      final currentPos = Offset.lerp(start, end, t)!;
+      final paint = Paint()
+        ..color = Colors.white.withValues(alpha: (1.0 - t) * 0.8)
+        ..strokeWidth = 2
+        ..strokeCap = StrokeCap.round;
+      canvas.drawLine(
+        currentPos,
+        currentPos + const Offset(15, -10),
+        paint,
+      );
+    }
+  }
+
+  void _drawMoon(Canvas canvas, Offset center) {
+    canvas.drawCircle(
+      center,
+      28,
+      Paint()..color = const Color(0xFFFFFDE7).withValues(alpha: 0.95),
+    );
+    canvas.drawCircle(
+      center + const Offset(11, -8),
+      26,
+      Paint()..color = const Color(0xFF172554),
+    );
+  }
+
+  void _drawStars(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.white;
+    for (int i = 0; i < 44; i++) {
+      final x = ((i * 73) % 100) / 100 * size.width;
+      final y = ((i * 41) % 100) / 100 * size.height * 0.48;
+      final alpha = 0.25 + 0.65 * ((math.sin(progress * 8 + i) + 1) / 2);
+      paint.color = Colors.white.withValues(alpha: alpha);
+      canvas.drawCircle(Offset(x, y), 1.1 + (i % 3) * 0.45, paint);
+    }
+  }
+
+  void _drawLandscape(Canvas canvas, Size size, ScenePoints points) {
+    final hillPaint = Paint()
+      ..color =
+          (values.isDayTime ? const Color(0xFF97D0AD) : const Color(0xFF1E5B52))
+              .withValues(alpha: 0.84);
+    canvas.drawOval(
+      Rect.fromLTWH(
+          size.width * 0.63, points.groundY - 64, size.width * 0.3, 96),
+      hillPaint,
+    );
+    canvas.drawOval(
+      Rect.fromLTWH(
+          size.width * 0.12, points.groundY - 42, size.width * 0.22, 68),
+      hillPaint,
+    );
+
+    final groundPaint = Paint()
+      ..color =
+          values.isDayTime ? const Color(0xFF7DBB86) : const Color(0xFF255F51);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(0, points.groundY, size.width, 34),
+        const Radius.circular(0),
+      ),
+      groundPaint,
+    );
+    canvas.drawLine(
+      Offset(0, points.groundY),
+      Offset(size.width, points.groundY),
+      Paint()
+        ..color = Colors.white.withValues(alpha: values.isDayTime ? 0.75 : 0.25)
+        ..strokeWidth = 2,
+    );
+
+    _drawTree(canvas, Offset(size.width * 0.04, points.groundY), 0.75);
+    _drawTree(canvas, Offset(size.width * 0.96, points.groundY), 0.7);
+  }
+
+  void _drawTree(Canvas canvas, Offset base, double scale) {
+    final trunk = Paint()
+      ..color = const Color(0xFF8D6E63)
+      ..strokeWidth = 4 * scale
+      ..strokeCap = StrokeCap.round;
+    final leaves = Paint()..color = const Color(0xFF4CAF50);
+    canvas.drawLine(base, base - Offset(0, 42 * scale), trunk);
+    canvas.drawCircle(base - Offset(0, 48 * scale), 14 * scale, leaves);
+    canvas.drawCircle(
+        base - Offset(10 * scale, 34 * scale), 10 * scale, leaves);
+    canvas.drawCircle(
+        base + Offset(10 * scale, -34 * scale), 10 * scale, leaves);
+  }
+
+  void _drawEnergyLines(Canvas canvas, Size size, ScenePoints points) {
+    final groundY = points.groundY;
+    final paths = [
+      EnergyFlow(
+        path: _polylinePath([
+          points.solarToInverter - const Offset(38, -51),
+          Offset(points.solarToInverter.dx - 38, groundY + 30),
+          Offset(points.inverterSolarPort.dx, groundY + 30),
+          points.inverterSolarPort,
+        ]),
+        color: AppTheme.primaryDark,
+        active: values.isDayTime,
+        speed: values.sunIntensity,
+      ),
+      EnergyFlow(
+        path: _polylinePath([
+          points.batteryToInverter - const Offset(-29, 0),
+          Offset(points.batteryToInverter.dx + 30, groundY + 38),
+          Offset(points.inverterBatteryPort.dx, groundY + 38),
+          points.inverterBatteryPort,
+        ]),
+        color: AppTheme.primaryDark,
+        active: true,
+        reverse: true,
+      ),
+      EnergyFlow(
+        path: _polylinePath([
+          points.gridToInverter,
+          Offset(points.gridToInverter.dx, groundY + 22),
+          Offset(points.inverterGridPort.dx, groundY + 22),
+          points.inverterGridPort,
+        ]),
+        color: values.wapdaLineActive ? AppTheme.primaryDark : AppTheme.error,
+        active: values.wapdaLineActive,
+      ),
+      EnergyFlow(
+        path: _polylinePath([
+          points.inverterSmartLoadPort,
+          Offset(points.inverterSmartLoadPort.dx - 0, groundY - 9),
+          Offset(points.smartLoadInput.dx + 1, groundY - 9),
+          points.smartLoadInput,
+        ]),
+        color: AppTheme.primaryDark,
+        active: true,
+      ),
+      EnergyFlow(
+        path: _polylinePath([
+          points.inverterHeavyLoadPort,
+          Offset(points.inverterHeavyLoadPort.dx, points.houseRect.bottom - 35),
+          Offset(points.heavyLoadInput.dx - 50, points.houseRect.bottom - 35),
+          points.heavyLoadInput - const Offset(10, 0),
+        ]),
+        color: values.heavyLoadOn ? const Color(0xFF1E88E5) : AppTheme.error,
+        active: values.heavyLoadOn,
+      ),
+    ];
+
+    for (final flow in paths) {
+      final linePaint = Paint()
+        ..color = flow.color
+        ..strokeWidth = 3
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round;
+
+      final sourceGlow = Paint()
+        ..color = flow.color.withValues(alpha: flow.active ? 0.12 : 0.08)
+        ..strokeWidth = 7
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round;
+
+      canvas.drawPath(flow.path, sourceGlow);
+      canvas.drawPath(flow.path, linePaint);
+      if (flow.active) {
+        _drawMovingDots(canvas, flow.path, flow.color,
+            reverse: flow.reverse, speed: flow.speed);
+      }
+    }
+  }
+
+  Path _polylinePath(List<Offset> points) {
+    final path = Path()..moveTo(points.first.dx, points.first.dy);
+    for (var i = 1; i < points.length; i++) {
+      path.lineTo(points[i].dx, points[i].dy);
+    }
+    return path;
+  }
+
+  void _drawMovingDots(Canvas canvas, Path path, Color color,
+      {bool reverse = false, double speed = 1.0}) {
+    final metrics = path.computeMetrics().toList();
+    if (metrics.isEmpty) return;
+    final dotPaint = Paint()..color = color.withValues(alpha: 0.95);
+    for (final metric in metrics) {
+      for (int i = 0; i < 3; i++) {
+        double t = ((progress * speed) + i * 0.34) % 1;
+        if (reverse) t = 1.0 - t;
+        final tangent = metric.getTangentForOffset(metric.length * t);
+        if (tangent == null) continue;
+        canvas.drawCircle(tangent.position, 3.4, dotPaint);
+        canvas.drawCircle(
+          tangent.position,
+          6.5,
+          Paint()..color = color.withValues(alpha: 0.11),
+        );
+      }
+    }
+  }
+
+  void _drawSolarPanel(Canvas canvas, Rect rect) {
+    final pole = Paint()
+      ..color = const Color(0xFF455A64)
+      ..strokeWidth = 5
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(
+        rect.bottomCenter, rect.bottomCenter + const Offset(0, 34), pole);
+    canvas.drawLine(
+      rect.bottomCenter + const Offset(-22, 34),
+      rect.bottomCenter + const Offset(22, 34),
+      pole,
+    );
+
+    final panelPath = Path()
+      ..moveTo(rect.left, rect.top + rect.height * 0.12)
+      ..lineTo(rect.right - 8, rect.top)
+      ..lineTo(rect.right, rect.bottom - rect.height * 0.14)
+      ..lineTo(rect.left + 9, rect.bottom)
+      ..close();
+    canvas.drawShadow(
+        panelPath, Colors.black.withValues(alpha: 0.18), 6, false);
+    canvas.drawPath(panelPath, Paint()..color = const Color(0xFF263B55));
+
+    final gridPaint = Paint()
+      ..color = const Color(0xFF9BD7FF).withValues(alpha: 0.7)
+      ..strokeWidth = 1;
+    for (int i = 1; i < 4; i++) {
+      final x = rect.left + rect.width * i / 4;
+      canvas.drawLine(
+          Offset(x, rect.top + 3), Offset(x + 7, rect.bottom - 4), gridPaint);
+    }
+    for (int i = 1; i < 3; i++) {
+      final y = rect.top + rect.height * i / 3;
+      canvas.drawLine(
+          Offset(rect.left + 5, y + 5), Offset(rect.right - 5, y), gridPaint);
+    }
+  }
+
+  void _drawHome(Canvas canvas, Rect rect) {
+    final wallPaint = Paint()..color = const Color(0xFFE9F1F2);
+    final shadowPaint = Paint()..color = Colors.black.withValues(alpha: 0.08);
+    canvas.drawOval(
+      Rect.fromLTWH(rect.left + 8, rect.bottom - 7, rect.width - 12, 18),
+      shadowPaint,
+    );
+
+    final body = Rect.fromLTWH(
+      rect.left + rect.width * 0.18,
+      rect.top + rect.height * 0.34,
+      rect.width * 0.5,
+      rect.height * 0.66,
+    );
+    canvas.drawRect(body, wallPaint);
+
+    final roof = Path()
+      ..moveTo(rect.left + rect.width * 0.1, rect.top + rect.height * 0.36)
+      ..lineTo(rect.left + rect.width * 0.47, rect.top + rect.height * 0.02)
+      ..lineTo(rect.left + rect.width * 0.76, rect.top + rect.height * 0.36)
+      ..close();
+    canvas.drawPath(roof, Paint()..color = const Color(0xFF13A6A6));
+
+    final sideRect = Rect.fromLTRB(
+      rect.left + rect.width * 0.62,
+      rect.top + rect.height * 0.52,
+      rect.left + rect.width * 0.86,
+      rect.bottom,
+    );
+    final side = Path()
+      ..moveTo(sideRect.left, sideRect.top)
+      ..lineTo(sideRect.right, sideRect.top)
+      ..lineTo(sideRect.right, sideRect.bottom)
+      ..lineTo(sideRect.left, sideRect.bottom)
+      ..close();
+    canvas.drawPath(side, wallPaint);
+
+    final sideRoof = Path()
+      ..moveTo(rect.left + rect.width * 0.58, rect.top + rect.height * 0.5)
+      ..lineTo(rect.left + rect.width * 0.72, rect.top + rect.height * 0.36)
+      ..lineTo(rect.left + rect.width * 0.91, rect.top + rect.height * 0.5)
+      ..lineTo(rect.left + rect.width * 0.86, rect.top + rect.height * 0.56)
+      ..lineTo(rect.left + rect.width * 0.72, rect.top + rect.height * 0.44)
+      ..lineTo(rect.left + rect.width * 0.62, rect.top + rect.height * 0.56)
+      ..close();
+    canvas.drawPath(sideRoof, Paint()..color = const Color(0xFF13A6A6));
+
+    final window = Paint()..color = const Color(0xFFFFD54F);
+    _drawWindow(
+        canvas, Rect.fromLTWH(body.left + 18, body.top + 26, 14, 30), window);
+    _drawWindow(
+        canvas, Rect.fromLTWH(body.left + 46, body.top + 26, 14, 30), window);
+    _drawWindow(canvas,
+        Rect.fromLTWH(sideRect.left + 24, sideRect.top + 38, 16, 26), window);
+
+    final acRect = Rect.fromLTWH(rect.right - 35, rect.bottom - 45, 24, 18);
+    canvas.drawRRect(RRect.fromRectAndRadius(acRect, const Radius.circular(2)),
+        Paint()..color = const Color(0xFFCFD8DC));
+    canvas.drawRect(Rect.fromLTWH(acRect.left + 4, acRect.top + 4, 16, 10),
+        Paint()..color = const Color(0xFF90A4AE));
+    // AC Fan
+    canvas.drawCircle(
+        Offset(acRect.left + 8, acRect.top + 9),
+        6,
+        Paint()
+          ..color = const Color(0xFF546E7A)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1);
+    for (int i = 0; i < 3; i++) {
+      canvas.drawLine(
+          Offset(acRect.right - 10, acRect.top + 5 + i * 4),
+          Offset(acRect.right - 4, acRect.top + 5 + i * 4),
+          Paint()
+            ..color = const Color(0xFF546E7A)
+            ..strokeWidth = 1);
+    }
+  }
+
+  void _drawWindow(Canvas canvas, Rect rect, Paint paint) {
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect, const Radius.circular(2)),
+      paint,
+    );
+    canvas.drawLine(rect.centerLeft, rect.centerRight,
+        Paint()..color = Colors.white.withValues(alpha: 0.55));
+    canvas.drawLine(rect.topCenter, rect.bottomCenter,
+        Paint()..color = Colors.white.withValues(alpha: 0.55));
+  }
+
+  void _drawBattery(Canvas canvas, Rect rect) {
+    final body = RRect.fromRectAndRadius(rect, const Radius.circular(7));
+    canvas.drawRRect(body, Paint()..color = const Color(0xFFECEFF1));
+    canvas.drawRRect(
+      body,
+      Paint()
+        ..color = const Color(0xFF78909C)
+        ..strokeWidth = 2
+        ..style = PaintingStyle.stroke,
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(rect.left + 8, rect.top - 4, rect.width - 16, 5),
+      Paint()..color = const Color(0xFF455A64),
+    );
+    for (int i = 0; i < 4; i++) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(
+              rect.left + 10 + i * 10, rect.top + 12, 7, rect.height - 22),
+          const Radius.circular(2),
+        ),
+        Paint()..color = AppTheme.primaryDark,
+      );
+    }
+  }
+
+  void _drawGrid(Canvas canvas, Offset base, double groundY) {
+    final polePaint = Paint()
+      ..color = const Color(0xFF37474F)
+      ..strokeWidth = 5
+      ..strokeCap = StrokeCap.round;
+    final wirePaint = Paint()
+      ..color = const Color(0xFF455A64)
+      ..strokeWidth = 1.6;
+    final top = base - const Offset(0, 116);
+    canvas.drawLine(base, top, polePaint);
+    canvas.drawLine(
+        top + const Offset(-24, 12), top + const Offset(24, 12), polePaint);
+    canvas.drawLine(
+        top + const Offset(-20, 12), top + const Offset(-45, 26), wirePaint);
+    canvas.drawLine(
+        top + const Offset(20, 12), top + const Offset(45, 26), wirePaint);
+    canvas.drawLine(
+        top + const Offset(-14, 0), top + const Offset(14, 0), wirePaint);
+    canvas.drawCircle(
+        top + const Offset(-18, 12), 3, Paint()..color = AppTheme.error);
+    canvas.drawCircle(
+        top + const Offset(18, 12), 3, Paint()..color = AppTheme.error);
+  }
+
+  void _drawInverter(Canvas canvas, Offset center) {
+    final rect = Rect.fromCenter(center: center, width: 54, height: 70);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect, const Radius.circular(12)),
+      Paint()..color = Colors.white,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect, const Radius.circular(12)),
+      Paint()
+        ..color = const Color(0xFF263238)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3,
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(rect.left + 11, rect.top + 17, rect.width - 22, 28),
+      Paint()..color = const Color(0xFF455A64),
+    );
+    canvas.drawCircle(
+        center + const Offset(0, 18), 5, Paint()..color = AppTheme.primary);
+  }
+
+  @override
+  bool shouldRepaint(EnergyScenePainter oldDelegate) {
+    return oldDelegate.progress != progress || oldDelegate.values != values;
+  }
+}
+
+class ScenePoints {
+  final Size size;
+
+  ScenePoints(this.size);
+
+  bool get isCompact => size.width < 380;
+  double get groundY => size.height - 120;
+  double get sourceY => groundY - 78;
+  double get sourceBusY => groundY + 34;
+  double get loadBusY => groundY + 12;
+
+  Offset get inverter => Offset(size.width * 0.42, groundY + 58);
+  Rect get solarPanel => Rect.fromCenter(
+        center: Offset(size.width * 0.13, sourceY + 16),
+        width: isCompact ? 72 : 84,
+        height: isCompact ? 38 : 44,
+      );
+  Rect get batteryRect => Rect.fromCenter(
+        center: Offset(size.width * 0.72, sourceY + 26),
+        width: isCompact ? 50 : 58,
+        height: isCompact ? 38 : 44,
+      );
+  Offset get gridPoleBase => Offset(size.width * 0.9, groundY);
+  Rect get houseRect => Rect.fromCenter(
+        center: Offset(size.width * 0.42, groundY - 76),
+        width: isCompact ? 162 : 194,
+        height: isCompact ? 120 : 142,
+      );
+  Offset get solarToInverter =>
+      Offset(solarPanel.right - 4, solarPanel.center.dy + 8);
+  Offset get inverterSolarPort => inverter + const Offset(-25, -14);
+  Offset get inverterGridPort => inverter + const Offset(25, -8);
+  Offset get inverterBatteryPort => inverter + const Offset(25, 18);
+  Offset get inverterSmartLoadPort => inverter + const Offset(-12, 35);
+  Offset get inverterHeavyLoadPort => inverter + const Offset(12, 35);
+  Offset get batteryToInverter =>
+      Offset(batteryRect.left + 2, batteryRect.center.dy + 12);
+  Offset get batteryToInverterRight =>
+      Offset(batteryRect.right - 2, batteryRect.bottom - 4);
+  Offset get gridToInverter => Offset(gridPoleBase.dx, groundY);
+  Offset get smartLoadInput => Offset(
+      houseRect.center.dx - houseRect.width * 0.18, houseRect.bottom - 4);
+  Offset get heavyLoadInput =>
+      Offset(houseRect.right - 23, houseRect.bottom - 36);
+}
+
+class EnergyFlow {
+  final Path path;
+  final Color color;
+  final bool active;
+  final bool reverse;
+  final double speed;
+
+  const EnergyFlow({
+    required this.path,
+    required this.color,
+    required this.active,
+    this.reverse = false,
+    this.speed = 1.0,
+  });
+}
+
+class EnergyValues {
+  final double powerKw;
+  final double productionKw;
+  final double consumptionKw;
+  final double batteryKw;
+  final double gridKw;
+  final int ldrValue;
+  final double gridVoltage;
+  final double sunIntensity;
+  final bool isDayTime;
+  final bool isSunny;
+  final bool isStormy;
+  final bool wapdaLineActive;
+  final bool heavyLoadOn;
+  final String lastUpdateText;
+
+  const EnergyValues({
+    required this.powerKw,
+    required this.productionKw,
+    required this.consumptionKw,
+    required this.batteryKw,
+    required this.gridKw,
+    required this.ldrValue,
+    required this.gridVoltage,
+    required this.sunIntensity,
+    required this.isDayTime,
+    required this.isSunny,
+    required this.isStormy,
+    required this.wapdaLineActive,
+    required this.heavyLoadOn,
+    required this.lastUpdateText,
+  });
+
+  factory EnergyValues.fromData(EnergyData? data) {
+    final powerKw = data == null ? 0.0 : math.max<double>(0, data.power / 1000);
+    final hasPower = powerKw > 0;
+    final gridActive =
+        data == null ? false : data.wapdaAvailable && data.wapdaRelayState;
+    final heavyLoad = data == null ? false : data.heavyLoadState;
+    final ldr = data?.ldrValue ?? 0;
+    final isNight = ldr <= 0;
+    final isDayTime = !isNight && (data?.isDayTime ?? true);
+    final isSunny = isDayTime && (data?.isSunny ?? true);
+    final sunIntensity =
+        isDayTime ? (ldr / 3000).clamp(0.08, 1.0).toDouble() : 0.0;
+    final formatter = DateFormat('yyyy/MM/dd HH:mm:ss');
+
+    return EnergyValues(
+      powerKw: powerKw,
+      productionKw: powerKw,
+      consumptionKw: data == null ? 0.0 : powerKw,
+      batteryKw: data == null
+          ? 0.0
+          : hasPower
+              ? powerKw * (heavyLoad ? 0.42 : 0.24)
+              : 0,
+      gridKw: data == null
+          ? 0.0
+          : gridActive
+              ? math.max(0.0, powerKw * 0.48)
+              : 0,
+      ldrValue: ldr,
+      gridVoltage: data?.voltage ?? 0.0,
+      sunIntensity: sunIntensity,
+      isDayTime: isDayTime,
+      isSunny: isSunny,
+      isStormy: isDayTime && !isSunny && ldr < 1200,
+      wapdaLineActive: gridActive,
+      heavyLoadOn: heavyLoad,
+      lastUpdateText: data == null
+          ? 'Waiting for data...'
+          : '${formatter.format(data.lastUpdate.toLocal())} local',
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is EnergyValues &&
+        powerKw == other.powerKw &&
+        productionKw == other.productionKw &&
+        consumptionKw == other.consumptionKw &&
+        batteryKw == other.batteryKw &&
+        gridKw == other.gridKw &&
+        ldrValue == other.ldrValue &&
+        gridVoltage == other.gridVoltage &&
+        sunIntensity == other.sunIntensity &&
+        isDayTime == other.isDayTime &&
+        isSunny == other.isSunny &&
+        isStormy == other.isStormy &&
+        wapdaLineActive == other.wapdaLineActive &&
+        heavyLoadOn == other.heavyLoadOn &&
+        lastUpdateText == other.lastUpdateText;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        powerKw,
+        productionKw,
+        consumptionKw,
+        batteryKw,
+        gridKw,
+        ldrValue,
+        gridVoltage,
+        sunIntensity,
+        isDayTime,
+        isSunny,
+        isStormy,
+        wapdaLineActive,
+        heavyLoadOn,
+        lastUpdateText,
+      );
+}
+
+String formatNumber(double value) {
+  if (value >= 100 || value == value.roundToDouble()) {
+    return value.toStringAsFixed(0);
+  }
+  return value.toStringAsFixed(1);
 }

@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:smart_energy_controller/models/energy_data.dart';
 import 'package:smart_energy_controller/models/daily_stats.dart';
@@ -6,6 +8,7 @@ import 'package:smart_energy_controller/models/alert_model.dart';
 import 'package:smart_energy_controller/services/api_service.dart';
 import 'package:smart_energy_controller/services/socket_service.dart';
 import 'package:smart_energy_controller/services/notification_service.dart';
+import 'package:home_widget/home_widget.dart';
 
 class EnergyProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -20,6 +23,7 @@ class EnergyProvider extends ChangeNotifier {
   String _connectionStatus = 'connecting';
   String _systemStatusMessage = 'System Normal';
   String _userMode = 'HOME';
+  String _currentTemp = '--°C';
 
   EnergyData? get currentData => _currentData;
   DailyStats? get dailyStats => _dailyStats;
@@ -30,6 +34,7 @@ class EnergyProvider extends ChangeNotifier {
   String get connectionStatus => _connectionStatus;
   String get systemStatusMessage => _systemStatusMessage;
   String get userMode => _userMode;
+  String get currentTemp => _currentTemp;
 
   EnergyProvider({bool autoConnect = true}) {
     _currentData = _fallbackData();
@@ -42,6 +47,7 @@ class EnergyProvider extends ChangeNotifier {
 
   Future<void> _init() async {
     _registerSocketListeners();
+    fetchWeather();
     await Future.wait([
       loadAllData(showLoading: false),
       _socketService.initialize().catchError((error) {
@@ -79,12 +85,33 @@ class EnergyProvider extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+      _updateHomeWidget();
+    }
+  }
+
+  Future<void> fetchWeather() async {
+    try {
+      final res = await http.get(Uri.parse('https://api.open-meteo.com/v1/forecast?latitude=33.68&longitude=73.04&current_weather=true'));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        _currentTemp = '${data['current_weather']['temperature'].round()}°C';
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Weather fetch failed: $e');
     }
   }
 
   Future<bool> sendCommand(String type, int value) async {
+    final previousData = _currentData;
+    final previousMode = _userMode;
     _applyCommandState(type, value);
     final success = await _apiService.sendCommand(type, value);
+    if (!success) {
+      _currentData = previousData;
+      _userMode = previousMode;
+      notifyListeners();
+    }
     return success;
   }
 
@@ -176,6 +203,7 @@ class EnergyProvider extends ChangeNotifier {
         _currentData = EnergyData.fromJson(Map<String, dynamic>.from(data));
         _isLoading = false;
         notifyListeners();
+        _updateHomeWidget();
       }
     });
 
@@ -265,5 +293,19 @@ class EnergyProvider extends ChangeNotifier {
   void dispose() {
     _socketService.disconnect();
     super.dispose();
+  }
+
+  Future<void> _updateHomeWidget() async {
+    if (_currentData == null) return;
+    
+    final powerKw = (_currentData!.power / 1000).toStringAsFixed(1);
+    final status = _currentData!.esp32Online ? 'Connected' : 'Offline';
+    
+    await HomeWidget.saveWidgetData<String>('powerKw', '$powerKw kW');
+    await HomeWidget.saveWidgetData<String>('status', status);
+    await HomeWidget.updateWidget(
+      name: 'EnergyWidgetProvider',
+      androidName: 'EnergyWidgetProvider',
+    );
   }
 }

@@ -186,6 +186,8 @@ class NotificationService {
     bool? vibration,
   }) async {
     if (!_notificationsEnabled) return;
+    final cleanTitle = _asciiSafe(title).trim();
+    final cleanBody = _asciiSafe(body).trim();
 
     // Check if user wants this type of notification
     final shouldShow = await _shouldShowNotification(priority);
@@ -212,7 +214,7 @@ class NotificationService {
           ? Int64List.fromList(_getVibrationPattern(priority))
           : null,
       playSound: enableSound,
-      styleInformation: const BigTextStyleInformation(''),
+      styleInformation: BigTextStyleInformation(body),
       visibility: NotificationVisibility.public,
       autoCancel: true,
       showWhen: true,
@@ -233,11 +235,15 @@ class NotificationService {
     // Show the notification
     await _flutterLocalNotificationsPlugin.show(
       id,
-      title,
-      body,
+      cleanTitle.isEmpty ? title : cleanTitle,
+      cleanBody.isEmpty ? body : cleanBody,
       details,
       payload: payload,
     );
+  }
+
+  String _asciiSafe(String value) {
+    return value.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
   }
 
   /// Show a critical alert notification (high priority)
@@ -343,7 +349,7 @@ class NotificationService {
       importance: _getImportanceForPriority(priority),
       priority: _getAndroidPriorityForPriority(priority),
       actions: androidActions,
-      styleInformation: const BigTextStyleInformation(''),
+      styleInformation: BigTextStyleInformation(body),
       autoCancel: true,
     );
 

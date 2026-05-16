@@ -42,12 +42,12 @@ class AlertModel extends Equatable {
           DateTime.now().millisecondsSinceEpoch.toString(),
       type: _parseAlertType(json['type']),
       priority: _parseAlertPriority(json['priority']),
-      message: json['message'] ?? 'Unknown alert',
-      details: json['details'],
+      message: json['message']?.toString() ?? 'Unknown alert',
+      details: json['details']?.toString(),
       timestamp: json['timestamp'] != null
           ? _parseTimestamp(json['timestamp'], json['date'])
           : DateTime.now(),
-      isRead: json['read'] ?? false,
+      isRead: _parseBool(json['isRead'] ?? json['read']),
     );
   }
 
@@ -233,6 +233,19 @@ AlertPriority _parseAlertPriority(String? priorityStr) {
   }
 }
 
+bool _parseBool(dynamic value) {
+  if (value is bool) return value;
+  if (value is num) return value != 0;
+  final normalized = value?.toString().trim().toLowerCase();
+  if (normalized == 'true' || normalized == '1' || normalized == 'yes') {
+    return true;
+  }
+  if (normalized == 'false' || normalized == '0' || normalized == 'no') {
+    return false;
+  }
+  return false;
+}
+
 /// Helper function to parse timestamp from server response
 DateTime _parseTimestamp(dynamic timestamp, dynamic dateStr) {
   // If timestamp is already a DateTime
@@ -247,6 +260,10 @@ DateTime _parseTimestamp(dynamic timestamp, dynamic dateStr) {
 
   // If timestamp is a string
   if (timestamp is String) {
+    final numeric = int.tryParse(timestamp);
+    if (numeric != null) {
+      return DateTime.fromMillisecondsSinceEpoch(numeric);
+    }
     try {
       return DateTime.parse(timestamp);
     } catch (e) {

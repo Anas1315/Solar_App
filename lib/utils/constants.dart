@@ -25,7 +25,7 @@ class Constants {
     'Content-Type': 'application/json',
   };
 
-  static const Duration timeout = Duration(seconds: 3);
+  static const Duration timeout = Duration(seconds: 10);
 
   // App Configuration
   static const String appName = 'Smart Energy Controller';
