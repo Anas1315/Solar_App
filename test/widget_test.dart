@@ -1,17 +1,16 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smart_energy_controller/main.dart';
 
 void main() {
-  testWidgets('Smart Energy app opens on the solar home screen',
-      (tester) async {
-    await tester.pumpWidget(const SmartEnergyApp(autoConnect: false));
-    await tester.pump();
+  testWidgets('Smart Energy app opens on the login screen', (tester) async {
+    SharedPreferences.setMockInitialValues({});
 
-    expect(find.text('Home'), findsOneWidget);
-    expect(find.text('Production'), findsOneWidget);
-    expect(find.text('Consumption'), findsOneWidget);
-    expect(find.text('Grid Voltage'), findsOneWidget);
-    expect(find.text('WAPDA:'), findsOneWidget);
-    expect(find.text('Heavy Load'), findsOneWidget);
+    await tester.pumpWidget(const SmartEnergyApp(autoConnect: false));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Welcome Back'), findsOneWidget);
+    expect(find.text('Login'), findsOneWidget);
+    expect(find.text('Sign Up'), findsOneWidget);
   });
 }

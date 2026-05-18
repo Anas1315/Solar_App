@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:smart_energy_controller/providers/energy_provider.dart';
+import 'package:smart_energy_controller/providers/auth_provider.dart';
 import 'package:smart_energy_controller/providers/theme_provider.dart';
+import 'package:smart_energy_controller/screens/login_screen.dart';
+import 'package:smart_energy_controller/screens/setup_screen.dart';
 import 'package:smart_energy_controller/screens/home_screen.dart';
 import 'package:smart_energy_controller/screens/controls_screen.dart';
 import 'package:smart_energy_controller/screens/analytics_screen.dart';
@@ -34,6 +37,8 @@ class SmartEnergyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(
+            create: (_) => AuthProvider(checkSetup: autoConnect)),
+        ChangeNotifierProvider(
           create: (_) => EnergyProvider(autoConnect: autoConnect),
         ),
       ],
@@ -45,7 +50,21 @@ class SmartEnergyApp extends StatelessWidget {
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: themeProvider.themeMode,
-            home: const MainNavigation(),
+            home: Consumer<AuthProvider>(
+              builder: (context, authProvider, _) {
+                if (authProvider.isLoading) {
+                  return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                if (authProvider.needsSetup) {
+                  return const SetupScreen();
+                }
+                return authProvider.isAuthenticated
+                    ? const MainNavigation()
+                    : const LoginScreen();
+              },
+            ),
           );
         },
       ),
@@ -95,13 +114,27 @@ class _MainNavigationState extends State<MainNavigation> {
       body: _screenForIndex(_currentIndex),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1A1A2E) : Colors.white,
+          color: isDark ? AppTheme.cardDark : Colors.white,
+          border: Border(
+            top: BorderSide(
+              color: isDark
+                  ? AppTheme.primaryLight.withValues(alpha: 0.08)
+                  : AppTheme.primary.withValues(alpha: 0.10),
+            ),
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 20,
-              offset: const Offset(0, -4),
+              color: (isDark ? Colors.black : AppTheme.primaryDark)
+                  .withValues(alpha: isDark ? 0.32 : 0.12),
+              blurRadius: 28,
+              offset: const Offset(0, -8),
             ),
+            if (!isDark)
+              BoxShadow(
+                color: AppTheme.sunGlow.withValues(alpha: 0.14),
+                blurRadius: 26,
+                offset: const Offset(0, -6),
+              ),
           ],
         ),
         child: SafeArea(
@@ -174,6 +207,11 @@ class _NavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isActive = index == current;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeColor = isDark ? AppTheme.primaryLight : AppTheme.primaryDark;
+    final inactiveColor =
+        isDark ? const Color(0xFF86A4AD) : const Color(0xFF78909C);
+
     return GestureDetector(
       onTap: () => onTap(index),
       behavior: HitTestBehavior.opaque,
@@ -182,24 +220,30 @@ class _NavItem extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: isActive
-              ? AppTheme.primary.withValues(alpha: 0.12)
+              ? (isDark ? AppTheme.primaryLight : AppTheme.primary)
+                  .withValues(alpha: isDark ? 0.16 : 0.11)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(24),
+          border: isActive
+              ? Border.all(
+                  color: activeColor.withValues(alpha: isDark ? 0.20 : 0.10),
+                )
+              : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               isActive ? activeIcon : icon,
-              color: isActive ? AppTheme.primary : Colors.grey,
+              color: isActive ? activeColor : inactiveColor,
               size: 24,
             ),
             if (isActive) ...[
               const SizedBox(width: 6),
               Text(
                 label,
-                style: const TextStyle(
-                  color: AppTheme.primary,
+                style: TextStyle(
+                  color: activeColor,
                   fontWeight: FontWeight.w600,
                   fontSize: 13,
                 ),

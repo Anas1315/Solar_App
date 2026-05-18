@@ -33,6 +33,8 @@ class _ControlsScreenState extends State<ControlsScreen> {
   @override
   Widget build(BuildContext context) {
     final energyProvider = Provider.of<EnergyProvider>(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final titleColor = isDark ? Colors.white : AppTheme.textDark;
     final data = energyProvider.currentData;
     final wapdaAutoMode = data?.wapdaAutoMode ?? true;
     final wapdaAvailable = data?.wapdaAvailable ?? false;
@@ -40,16 +42,14 @@ class _ControlsScreenState extends State<ControlsScreen> {
     final heavyLoadOn = data?.heavyLoadState ?? false;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: isDark ? AppTheme.darkBg : AppTheme.lightBg,
       appBar: AppBar(
         leading: IconButton(
-          icon:
-              const Icon(Icons.arrow_back_ios, color: Colors.black87, size: 20),
+          icon: Icon(Icons.arrow_back_ios, color: titleColor, size: 20),
           onPressed: () {},
         ),
-        title: const Text('Grid & Load Control',
-            style:
-                TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
+        title: Text('Grid & Load Control',
+            style: TextStyle(color: titleColor, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
@@ -59,11 +59,11 @@ class _ControlsScreenState extends State<ControlsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Grid & Load Control',
+              Text('Grid & Load Control',
                   style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87)),
+                      color: titleColor)),
               const SizedBox(height: 20),
 
               // Wapda Grid Control
@@ -71,15 +71,19 @@ class _ControlsScreenState extends State<ControlsScreen> {
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [
-                      const Color(0xFFFFF2E8),
-                      Colors.white.withValues(alpha: 0.5)
-                    ],
+                    colors: isDark
+                        ? const [AppTheme.cardDarkAlt, AppTheme.cardDark]
+                        : const [Colors.white, AppTheme.lightSurfaceTint],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Colors.white, width: 2),
+                  border: Border.all(
+                    color: isDark
+                        ? AppTheme.primaryLight.withValues(alpha: 0.12)
+                        : Colors.white,
+                    width: 2,
+                  ),
                   boxShadow: AppTheme.cardShadow,
                 ),
                 child: Column(
@@ -167,15 +171,19 @@ class _ControlsScreenState extends State<ControlsScreen> {
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [
-                      const Color(0xFFFFF2E8),
-                      Colors.white.withValues(alpha: 0.5)
-                    ],
+                    colors: isDark
+                        ? const [AppTheme.cardDarkAlt, AppTheme.cardDark]
+                        : const [Colors.white, AppTheme.lightSurfaceTint],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Colors.white, width: 2),
+                  border: Border.all(
+                    color: isDark
+                        ? AppTheme.primaryLight.withValues(alpha: 0.12)
+                        : Colors.white,
+                    width: 2,
+                  ),
                   boxShadow: AppTheme.cardShadow,
                 ),
                 child: Column(
@@ -470,12 +478,17 @@ class _ControlsScreenState extends State<ControlsScreen> {
     required bool selected,
     required VoidCallback onTap,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? Colors.white : Colors.transparent,
+          color: selected
+              ? (isDark
+                  ? AppTheme.primaryLight.withValues(alpha: 0.12)
+                  : Colors.white)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(26),
           boxShadow: selected
               ? [
@@ -490,7 +503,9 @@ class _ControlsScreenState extends State<ControlsScreen> {
           child: Text(
             label,
             style: TextStyle(
-              color: selected ? Colors.black87 : Colors.black54,
+              color: selected
+                  ? (isDark ? Colors.white : AppTheme.textDark)
+                  : (isDark ? AppTheme.textLight : AppTheme.textMuted),
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -504,26 +519,34 @@ class _ControlsScreenState extends State<ControlsScreen> {
     required String title,
     required String subtitle,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.6),
+        color: isDark
+            ? AppTheme.primaryLight.withValues(alpha: 0.08)
+            : Colors.white.withValues(alpha: 0.68),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         children: [
-          Icon(icon, color: const Color(0xFF00BFA5)),
+          Icon(icon, color: AppTheme.primary),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title,
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                    style: TextStyle(
+                      color: isDark ? Colors.white : AppTheme.textDark,
+                      fontWeight: FontWeight.w600,
+                    )),
                 const SizedBox(height: 3),
                 Text(subtitle,
-                    style:
-                        const TextStyle(fontSize: 12, color: Colors.black54)),
+                    style: TextStyle(
+                        fontSize: 12,
+                        color:
+                            isDark ? AppTheme.textLight : AppTheme.textMuted)),
               ],
             ),
           ),
@@ -538,25 +561,39 @@ class _ControlsScreenState extends State<ControlsScreen> {
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.6),
+        color: isDark
+            ? AppTheme.primaryLight.withValues(alpha: 0.08)
+            : Colors.white.withValues(alpha: 0.68),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         children: [
-          Icon(icon, color: Colors.black54),
+          Icon(icon, color: isDark ? AppTheme.textLight : AppTheme.textMuted),
           const SizedBox(width: 12),
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
+          Text(title,
+              style: TextStyle(
+                color: isDark ? Colors.white : AppTheme.textDark,
+                fontWeight: FontWeight.w500,
+              )),
           const Spacer(),
           Container(
             height: 34,
             decoration: BoxDecoration(
-              color: value ? const Color(0xFF00BFA5) : Colors.white,
+              color: value
+                  ? AppTheme.primary
+                  : (isDark ? AppTheme.cardDarkAlt : Colors.white),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                  color: value ? Colors.transparent : Colors.grey.shade300),
+                color: value
+                    ? Colors.transparent
+                    : (isDark
+                        ? AppTheme.primaryLight.withValues(alpha: 0.14)
+                        : Colors.grey.shade300),
+              ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -568,7 +605,9 @@ class _ControlsScreenState extends State<ControlsScreen> {
                     alignment: Alignment.center,
                     child: Text('Off',
                         style: TextStyle(
-                            color: value ? Colors.white70 : Colors.black87,
+                            color: value
+                                ? Colors.white70
+                                : (isDark ? Colors.white : AppTheme.textDark),
                             fontSize: 12,
                             fontWeight: FontWeight.w600)),
                   ),
@@ -579,7 +618,8 @@ class _ControlsScreenState extends State<ControlsScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     decoration: value
                         ? BoxDecoration(
-                            color: Colors.white,
+                            color:
+                                isDark ? AppTheme.primaryLight : Colors.white,
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
@@ -592,8 +632,10 @@ class _ControlsScreenState extends State<ControlsScreen> {
                     child: Text('On',
                         style: TextStyle(
                             color: value
-                                ? const Color(0xFF00BFA5)
-                                : Colors.black54,
+                                ? AppTheme.primary
+                                : (isDark
+                                    ? AppTheme.textLight
+                                    : AppTheme.textMuted),
                             fontSize: 12,
                             fontWeight: FontWeight.w600)),
                   ),

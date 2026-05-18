@@ -130,6 +130,8 @@ class ThemeProvider extends ChangeNotifier {
         secondary: _secondaryColor,
         error: _errorColor,
         surface: Colors.white,
+        primaryContainer: Color(0xFFDDF7F1),
+        secondaryContainer: Color(0xFFE1ECFF),
       ),
       scaffoldBackgroundColor: _lightBackgroundColor,
       cardColor: Colors.white,
@@ -137,7 +139,7 @@ class ThemeProvider extends ChangeNotifier {
       appBarTheme: const AppBarTheme(
         elevation: 0,
         centerTitle: true,
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         foregroundColor: _textDarkColor,
         titleTextStyle: TextStyle(
           color: _textDarkColor,
@@ -241,7 +243,9 @@ class ThemeProvider extends ChangeNotifier {
         primary: _primaryColor,
         secondary: _secondaryColor,
         error: _errorColor,
-        surface: Color(0xFF1E1E2E),
+        surface: _darkCardColor,
+        primaryContainer: Color(0xFF123F3A),
+        secondaryContainer: Color(0xFF172D55),
       ),
       scaffoldBackgroundColor: backgroundColor,
       cardColor: cardColor,
@@ -366,14 +370,14 @@ class ThemeProvider extends ChangeNotifier {
   /// Get gradient backgrounds
   List<Color> get primaryGradient {
     return isDarkMode
-        ? [const Color(0xFF2ECC71), const Color(0xFF27AE60)]
-        : [const Color(0xFF2ECC71), const Color(0xFF219A52)];
+        ? [const Color(0xFF8FE8DC), const Color(0xFF14B8A6)]
+        : [const Color(0xFF14B8A6), const Color(0xFF0F766E)];
   }
 
   List<Color> get backgroundGradient {
     return isDarkMode
-        ? [const Color(0xFF0F0F1A), const Color(0xFF1A1A2E)]
-        : [const Color(0xFFF5F5F5), const Color(0xFFE8E8E8)];
+        ? [const Color(0xFF030B0D), const Color(0xFF123036)]
+        : [const Color(0xFFFFF2D7), const Color(0xFFE7F2FF)];
   }
 
   /// Get card shadow
@@ -405,19 +409,19 @@ class ThemeProvider extends ChangeNotifier {
 
 // ========== COLOR CONSTANTS ==========
 
-const Color _primaryColor = Color(0xFF2ECC71);
-const Color _secondaryColor = Color(0xFF3498DB);
-const Color _successColor = Color(0xFF2ECC71);
-const Color _warningColor = Color(0xFFF39C12);
-const Color _errorColor = Color(0xFFE74C3C);
-const Color _infoColor = Color(0xFF3498DB);
+const Color _primaryColor = Color(0xFF14B8A6);
+const Color _secondaryColor = Color(0xFF2563EB);
+const Color _successColor = Color(0xFF10B981);
+const Color _warningColor = Color(0xFFF59E0B);
+const Color _errorColor = Color(0xFFEF4444);
+const Color _infoColor = Color(0xFF38BDF8);
 
-const Color _textDarkColor = Color(0xFF1A1A1A);
+const Color _textDarkColor = Color(0xFF102326);
 const Color _textLightColor = Color(0xFFFFFFFF);
 
-const Color _lightBackgroundColor = Color(0xFFF8F9FA);
-const Color _darkBackgroundColor = Color(0xFF0F0F1A);
-const Color _darkCardColor = Color(0xFF1E1E2E);
+const Color _lightBackgroundColor = Color(0xFFF7FAF7);
+const Color _darkBackgroundColor = Color(0xFF071518);
+const Color _darkCardColor = Color(0xFF0F2528);
 
 // ========== EXTENSION FOR BUILD CONTEXT ==========
 

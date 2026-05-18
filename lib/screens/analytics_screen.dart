@@ -33,6 +33,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   @override
   Widget build(BuildContext context) {
     final energyProvider = Provider.of<EnergyProvider>(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final titleColor = isDark ? Colors.white : AppTheme.textDark;
+    final mutedColor = isDark ? AppTheme.textLight : AppTheme.textMuted;
     final stats = energyProvider.dailyStats ?? DailyStats.empty();
     final chartData = _chartDataForDay(
       _selectedDayIndex,
@@ -42,16 +45,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: isDark ? AppTheme.darkBg : AppTheme.lightBg,
       appBar: AppBar(
         leading: IconButton(
-          icon:
-              const Icon(Icons.arrow_back_ios, color: Colors.black87, size: 20),
+          icon: Icon(Icons.arrow_back_ios, color: titleColor, size: 20),
           onPressed: () {},
         ),
-        title: const Text(
+        title: Text(
           'Power Over Time',
-          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+          style: TextStyle(color: titleColor, fontWeight: FontWeight.bold),
         ),
         actions: [
           Padding(
@@ -69,7 +71,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: isDark ? AppTheme.cardDark : Colors.white,
               borderRadius: BorderRadius.circular(24),
               boxShadow: AppTheme.cardShadow,
             ),
@@ -78,20 +80,22 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               children: [
                 Row(
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             'Power Over Time',
                             style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.w700),
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: titleColor,
+                            ),
                           ),
-                          SizedBox(height: 4),
+                          const SizedBox(height: 4),
                           Text(
                             'Select a day to inspect hourly power',
-                            style:
-                                TextStyle(fontSize: 13, color: Colors.black54),
+                            style: TextStyle(fontSize: 13, color: mutedColor),
                           ),
                         ],
                       ),
@@ -287,6 +291,7 @@ class _StatLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
@@ -307,16 +312,16 @@ class _StatLine extends StatelessWidget {
           const SizedBox(width: 12),
           Text(
             label,
-            style: const TextStyle(
-              color: Colors.black54,
+            style: TextStyle(
+              color: isDark ? AppTheme.textLight : AppTheme.textMuted,
               fontWeight: FontWeight.w700,
             ),
           ),
           const Spacer(),
           Text(
             value,
-            style: const TextStyle(
-              color: Colors.black87,
+            style: TextStyle(
+              color: isDark ? Colors.white : AppTheme.textDark,
               fontSize: 18,
               fontWeight: FontWeight.w900,
             ),

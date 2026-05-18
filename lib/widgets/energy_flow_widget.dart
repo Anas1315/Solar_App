@@ -117,7 +117,7 @@ class EnergyScene extends StatelessWidget {
               top: points.smartLoadInput.dy + 8,
               child: LoadLineLabel(
                 text: '',
-                color: AppTheme.primaryDark,
+                color: AppTheme.primary,
                 brightText: !values.isDayTime,
               ),
             ),
@@ -285,20 +285,20 @@ class EnergyScenePainter extends CustomPainter {
           ]
         : values.isStormy
             ? const [
-                Color(0xFF7E8FA1),
-                Color(0xFFAAB7C2),
-                Color(0xFFB7D0C1),
+                Color(0xFF73889A),
+                Color(0xFFAAB9C4),
+                Color(0xFFC3D9C9),
               ]
             : values.isSunny
                 ? const [
-                    Color(0xFFE8F7FF),
-                    Color(0xFFF8FDFF),
-                    Color(0xFFB7DEC7),
+                    Color(0xFFE7F6FF),
+                    Color(0xFFFFFCF2),
+                    Color(0xFFC8E7D1),
                   ]
                 : const [
-                    Color(0xFFD8E6F0),
-                    Color(0xFFEFF5F8),
-                    Color(0xFFB7D0C1),
+                    Color(0xFFDCEBF2),
+                    Color(0xFFF5FAF7),
+                    Color(0xFFC1D9C7),
                   ];
 
     final paint = Paint()
@@ -492,7 +492,7 @@ class EnergyScenePainter extends CustomPainter {
   void _drawLandscape(Canvas canvas, Size size, ScenePoints points) {
     final hillPaint = Paint()
       ..color =
-          (values.isDayTime ? const Color(0xFF97D0AD) : const Color(0xFF1E5B52))
+          (values.isDayTime ? const Color(0xFF9FD3B2) : const Color(0xFF1E5B52))
               .withValues(alpha: 0.84);
     canvas.drawOval(
       Rect.fromLTWH(
@@ -507,7 +507,7 @@ class EnergyScenePainter extends CustomPainter {
 
     final groundPaint = Paint()
       ..color =
-          values.isDayTime ? const Color(0xFF7DBB86) : const Color(0xFF255F51);
+          values.isDayTime ? const Color(0xFF74B88A) : const Color(0xFF255F51);
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromLTWH(0, points.groundY, size.width, 34),
@@ -551,7 +551,7 @@ class EnergyScenePainter extends CustomPainter {
           Offset(points.inverterSolarPort.dx, groundY + 30),
           points.inverterSolarPort,
         ]),
-        color: AppTheme.primaryDark,
+        color: AppTheme.primary,
         active: values.isDayTime,
         speed: values.sunIntensity,
       ),
@@ -562,7 +562,7 @@ class EnergyScenePainter extends CustomPainter {
           Offset(points.inverterBatteryPort.dx, groundY + 38),
           points.inverterBatteryPort,
         ]),
-        color: AppTheme.primaryDark,
+        color: AppTheme.primary,
         active: true,
         reverse: true,
       ),
@@ -573,7 +573,7 @@ class EnergyScenePainter extends CustomPainter {
           Offset(points.inverterGridPort.dx, groundY + 22),
           points.inverterGridPort,
         ]),
-        color: values.wapdaLineActive ? AppTheme.primaryDark : AppTheme.error,
+        color: values.wapdaLineActive ? AppTheme.primary : AppTheme.error,
         active: values.wapdaLineActive,
       ),
       EnergyFlow(
@@ -583,7 +583,7 @@ class EnergyScenePainter extends CustomPainter {
           Offset(points.smartLoadInput.dx + 1, groundY - 9),
           points.smartLoadInput,
         ]),
-        color: AppTheme.primaryDark,
+        color: AppTheme.primary,
         active: true,
       ),
       EnergyFlow(
@@ -672,10 +672,10 @@ class EnergyScenePainter extends CustomPainter {
       ..close();
     canvas.drawShadow(
         panelPath, Colors.black.withValues(alpha: 0.18), 6, false);
-    canvas.drawPath(panelPath, Paint()..color = const Color(0xFF263B55));
+    canvas.drawPath(panelPath, Paint()..color = const Color(0xFF1E3A4A));
 
     final gridPaint = Paint()
-      ..color = const Color(0xFF9BD7FF).withValues(alpha: 0.7)
+      ..color = AppTheme.primaryLight.withValues(alpha: 0.74)
       ..strokeWidth = 1;
     for (int i = 1; i < 4; i++) {
       final x = rect.left + rect.width * i / 4;
@@ -690,7 +690,7 @@ class EnergyScenePainter extends CustomPainter {
   }
 
   void _drawHome(Canvas canvas, Rect rect) {
-    final wallPaint = Paint()..color = const Color(0xFFE9F1F2);
+    final wallPaint = Paint()..color = const Color(0xFFF0F7F4);
     final shadowPaint = Paint()..color = Colors.black.withValues(alpha: 0.08);
     canvas.drawOval(
       Rect.fromLTWH(rect.left + 8, rect.bottom - 7, rect.width - 12, 18),
@@ -710,7 +710,7 @@ class EnergyScenePainter extends CustomPainter {
       ..lineTo(rect.left + rect.width * 0.47, rect.top + rect.height * 0.02)
       ..lineTo(rect.left + rect.width * 0.76, rect.top + rect.height * 0.36)
       ..close();
-    canvas.drawPath(roof, Paint()..color = const Color(0xFF13A6A6));
+    canvas.drawPath(roof, Paint()..color = AppTheme.primaryDark);
 
     final sideRect = Rect.fromLTRB(
       rect.left + rect.width * 0.62,
@@ -734,9 +734,9 @@ class EnergyScenePainter extends CustomPainter {
       ..lineTo(rect.left + rect.width * 0.72, rect.top + rect.height * 0.44)
       ..lineTo(rect.left + rect.width * 0.62, rect.top + rect.height * 0.56)
       ..close();
-    canvas.drawPath(sideRoof, Paint()..color = const Color(0xFF13A6A6));
+    canvas.drawPath(sideRoof, Paint()..color = AppTheme.primaryDark);
 
-    final window = Paint()..color = const Color(0xFFFFD54F);
+    final window = Paint()..color = AppTheme.sunGlow;
     _drawWindow(
         canvas, Rect.fromLTWH(body.left + 18, body.top + 26, 14, 30), window);
     _drawWindow(
@@ -799,7 +799,7 @@ class EnergyScenePainter extends CustomPainter {
               rect.left + 10 + i * 10, rect.top + 12, 7, rect.height - 22),
           const Radius.circular(2),
         ),
-        Paint()..color = AppTheme.primaryDark,
+        Paint()..color = AppTheme.primary,
       );
     }
   }
@@ -823,9 +823,15 @@ class EnergyScenePainter extends CustomPainter {
     canvas.drawLine(
         top + const Offset(-14, 0), top + const Offset(14, 0), wirePaint);
     canvas.drawCircle(
-        top + const Offset(-18, 12), 3, Paint()..color = AppTheme.error);
+        top + const Offset(-18, 12),
+        3,
+        Paint()
+          ..color = values.wapdaAvailable ? AppTheme.success : AppTheme.error);
     canvas.drawCircle(
-        top + const Offset(18, 12), 3, Paint()..color = AppTheme.error);
+        top + const Offset(18, 12),
+        3,
+        Paint()
+          ..color = values.wapdaAvailable ? AppTheme.success : AppTheme.error);
   }
 
   void _drawInverter(Canvas canvas, Offset center) {
@@ -930,6 +936,7 @@ class EnergyValues {
   final bool isSunny;
   final bool isStormy;
   final bool wapdaLineActive;
+  final bool wapdaAvailable;
   final bool heavyLoadOn;
   final String lastUpdateText;
 
@@ -946,6 +953,7 @@ class EnergyValues {
     required this.isSunny,
     required this.isStormy,
     required this.wapdaLineActive,
+    required this.wapdaAvailable,
     required this.heavyLoadOn,
     required this.lastUpdateText,
   });
@@ -985,6 +993,7 @@ class EnergyValues {
       isSunny: isSunny,
       isStormy: isDayTime && !isSunny && ldr < 1200,
       wapdaLineActive: gridActive,
+      wapdaAvailable: data?.wapdaAvailable ?? false,
       heavyLoadOn: heavyLoad,
       lastUpdateText: data == null
           ? 'Waiting for data...'
@@ -1007,6 +1016,7 @@ class EnergyValues {
         isSunny == other.isSunny &&
         isStormy == other.isStormy &&
         wapdaLineActive == other.wapdaLineActive &&
+        wapdaAvailable == other.wapdaAvailable &&
         heavyLoadOn == other.heavyLoadOn &&
         lastUpdateText == other.lastUpdateText;
   }
@@ -1025,6 +1035,7 @@ class EnergyValues {
         isSunny,
         isStormy,
         wapdaLineActive,
+        wapdaAvailable,
         heavyLoadOn,
         lastUpdateText,
       );

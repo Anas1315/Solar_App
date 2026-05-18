@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:smart_energy_controller/models/energy_data.dart';
 import 'package:smart_energy_controller/models/daily_stats.dart';
+import 'package:smart_energy_controller/services/auth_service.dart';
 import 'package:smart_energy_controller/utils/constants.dart';
 
 class ApiService {
@@ -9,12 +10,21 @@ class ApiService {
   factory ApiService() => _instance;
   ApiService._internal();
 
+  Future<Map<String, String>> _getHeaders() async {
+    final token = await AuthService().getToken();
+    return {
+      ...Constants.headers,
+      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+    };
+  }
+
   Future<EnergyData> getStatus() async {
     try {
+      final headers = await _getHeaders();
       final response = await http
           .get(
             Uri.parse('${Constants.baseUrl}${Constants.endpointStatus}'),
-            headers: Constants.headers,
+            headers: headers,
           )
           .timeout(Constants.timeout);
 
@@ -30,10 +40,11 @@ class ApiService {
 
   Future<DailyStats> getDailyStats() async {
     try {
+      final headers = await _getHeaders();
       final response = await http
           .get(
             Uri.parse('${Constants.baseUrl}${Constants.endpointDailyStats}'),
-            headers: Constants.headers,
+            headers: headers,
           )
           .timeout(Constants.timeout);
 
@@ -49,10 +60,11 @@ class ApiService {
 
   Future<List<HourlyData>> getHourlyData() async {
     try {
+      final headers = await _getHeaders();
       final response = await http
           .get(
             Uri.parse('${Constants.baseUrl}${Constants.endpointHourlyData}'),
-            headers: Constants.headers,
+            headers: headers,
           )
           .timeout(Constants.timeout);
 
@@ -69,10 +81,11 @@ class ApiService {
 
   Future<List<dynamic>> getEvents() async {
     try {
+      final headers = await _getHeaders();
       final response = await http
           .get(
             Uri.parse('${Constants.baseUrl}${Constants.endpointEvents}'),
-            headers: Constants.headers,
+            headers: headers,
           )
           .timeout(Constants.timeout);
 
@@ -88,10 +101,11 @@ class ApiService {
 
   Future<List<dynamic>> getAlerts() async {
     try {
+      final headers = await _getHeaders();
       final response = await http
           .get(
             Uri.parse('${Constants.baseUrl}${Constants.endpointAlerts}'),
-            headers: Constants.headers,
+            headers: headers,
           )
           .timeout(Constants.timeout);
 
@@ -111,10 +125,11 @@ class ApiService {
 
   Future<bool> sendCommandPayload(String type, Object value) async {
     try {
+      final headers = await _getHeaders();
       final response = await http
           .post(
             Uri.parse('${Constants.baseUrl}${Constants.endpointCommand}'),
-            headers: Constants.headers,
+            headers: headers,
             body: json.encode({'type': type, 'value': value}),
           )
           .timeout(Constants.timeout);
@@ -127,10 +142,11 @@ class ApiService {
 
   Future<bool> clearEvents() async {
     try {
+      final headers = await _getHeaders();
       final response = await http
           .delete(
             Uri.parse('${Constants.baseUrl}${Constants.endpointClearEvents}'),
-            headers: Constants.headers,
+            headers: headers,
           )
           .timeout(Constants.timeout);
 

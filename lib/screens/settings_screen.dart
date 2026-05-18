@@ -5,9 +5,11 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smart_energy_controller/providers/energy_provider.dart';
+import 'package:smart_energy_controller/providers/auth_provider.dart';
 import 'package:smart_energy_controller/providers/theme_provider.dart';
 import 'package:smart_energy_controller/services/notification_service.dart';
 import 'package:smart_energy_controller/utils/constants.dart';
+import 'package:smart_energy_controller/utils/theme.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -18,7 +20,6 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen>
     with SingleTickerProviderStateMixin {
-  late TabController _tabController;
 
   // LDR Settings
   int _sunThreshold = Constants.ldrSunnyThreshold;
@@ -53,15 +54,10 @@ class _SettingsScreenState extends State<SettingsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
     _loadSettings();
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
+
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -101,37 +97,45 @@ class _SettingsScreenState extends State<SettingsScreen>
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final energyProvider = Provider.of<EnergyProvider>(context);
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.user;
+    final isAdmin = user?.role == 'admin' || user?.role == 'master_admin';
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-        centerTitle: true,
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          tabs: const [
-            Tab(text: 'General', icon: Icon(Icons.settings, size: 18)),
-            Tab(text: 'LDR', icon: Icon(Icons.sunny, size: 18)),
-            Tab(
-                text: 'Notifications',
-                icon: Icon(Icons.notifications, size: 18)),
-            Tab(text: 'System', icon: Icon(Icons.dns, size: 18)),
-            Tab(text: 'About', icon: Icon(Icons.info, size: 18)),
-          ],
-          indicatorColor: Theme.of(context).primaryColor,
-          labelColor: Theme.of(context).primaryColor,
-          unselectedLabelColor: Colors.grey,
+    // Define tabs dynamically
+    final List<Widget> tabs = [
+      const Tab(text: 'General', icon: Icon(Icons.settings, size: 18)),
+      if (isAdmin) const Tab(text: 'LDR', icon: Icon(Icons.sunny, size: 18)),
+      const Tab(text: 'Notifications', icon: Icon(Icons.notifications, size: 18)),
+      if (isAdmin) const Tab(text: 'System', icon: Icon(Icons.dns, size: 18)),
+      const Tab(text: 'About', icon: Icon(Icons.info, size: 18)),
+    ];
+
+    final List<Widget> tabViews = [
+      _buildGeneralSettings(themeProvider),
+      if (isAdmin) _buildLDRSettings(themeProvider, energyProvider),
+      _buildNotificationSettings(themeProvider),
+      if (isAdmin) _buildSystemSettings(themeProvider, energyProvider),
+      _buildAboutSettings(themeProvider),
+    ];
+
+    // Handle TabController length mismatch during role changes (or just use a new one)
+    return DefaultTabController(
+      length: tabs.length,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Settings'),
+          centerTitle: true,
+          bottom: TabBar(
+            isScrollable: true,
+            tabs: tabs,
+            indicatorColor: Theme.of(context).primaryColor,
+            labelColor: Theme.of(context).primaryColor,
+            unselectedLabelColor: Colors.grey,
+          ),
         ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildGeneralSettings(themeProvider),
-          _buildLDRSettings(themeProvider, energyProvider),
-          _buildNotificationSettings(themeProvider),
-          _buildSystemSettings(themeProvider, energyProvider),
-          _buildAboutSettings(themeProvider),
-        ],
+        body: TabBarView(
+          children: tabViews,
+        ),
       ),
     );
   }
@@ -139,10 +143,47 @@ class _SettingsScreenState extends State<SettingsScreen>
   // ========== GENERAL SETTINGS ==========
 
   Widget _buildGeneralSettings(ThemeProvider themeProvider) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.user;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
+          _buildSection(
+            title: 'Account',
+            icon: Icons.person,
+            children: [
+              ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: AppTheme.primary.withValues(alpha: 0.1),
+                  child: Text(
+                    user?.name.substring(0, 1).toUpperCase() ?? 'U',
+                    style: const TextStyle(color: AppTheme.primary),
+                  ),
+                ),
+                title: Text(user?.name ?? 'User'),
+                subtitle: Text(user?.email ?? ''),
+                trailing: Chip(
+                  label: Text(
+                    user?.role.toUpperCase() ?? 'USER',
+                    style: const TextStyle(fontSize: 10, color: Colors.white),
+                  ),
+                  backgroundColor: AppTheme.primary,
+                  padding: EdgeInsets.zero,
+                ),
+              ),
+              const Divider(),
+              _buildButtonTile(
+                title: 'Logout',
+                subtitle: 'Sign out of your account',
+                icon: Icons.logout,
+                onTap: () => authProvider.logout(),
+                color: Colors.red,
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
           _buildSection(
             title: 'Appearance',
             icon: Icons.palette,
@@ -376,8 +417,8 @@ class _SettingsScreenState extends State<SettingsScreen>
             icon: Icons.notifications_active,
             children: [
               _buildSwitchTile(
-                title: 'Desktop Notifications',
-                subtitle: 'Show system notifications on your device',
+                title: 'App Notifications',
+                subtitle: 'Show system notifications on your mobile device',
                 value: _desktopNotifications,
                 onChanged: (v) {
                   setState(() => _desktopNotifications = v);

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
+import 'package:smart_energy_controller/services/auth_service.dart';
 import 'package:smart_energy_controller/utils/constants.dart';
 
 class SocketService {
@@ -15,11 +16,16 @@ class SocketService {
   Future<void> initialize() async {
     if (_isInitialized) return;
 
+    final token = await AuthService().getToken();
+
     socket = io.io(
         Constants.baseUrl,
         io.OptionBuilder()
             .setTransports(['websocket'])
             .disableAutoConnect()
+            .setAuth({
+              'token': token,
+            })
             .setTimeout(Constants.timeout.inMilliseconds)
             .setReconnectionAttempts(10)
             .setReconnectionDelay(1200)
@@ -97,6 +103,14 @@ class SocketService {
   void disconnect() {
     if (_isInitialized) {
       socket.disconnect();
+    }
+  }
+
+  void reconnect() {
+    if (_isInitialized) {
+      socket.disconnect();
+      _isInitialized = false;
+      initialize();
     }
   }
 }

@@ -24,43 +24,62 @@ class _HomeScreenState extends State<HomeScreen> {
         data?.wapdaAvailable == true && data?.wapdaRelayState == true;
 
     return Scaffold(
-      backgroundColor: isDark ? AppTheme.darkBg : const Color(0xFFEAF6FB),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _TopStatusBar(
-              isOnline: isOnline,
-              isDayTime: values.isDayTime,
-              isSunny: values.isSunny,
-              isStormy: values.isStormy,
-            ),
-            Expanded(
-              child: Transform.translate(
-                offset: const Offset(0, -15),
-                child: EnergyFlowWidget(values: values),
+      backgroundColor: isDark ? AppTheme.darkBg : AppTheme.lightBg,
+      body: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isDark
+                ? const [
+                    AppTheme.darkerBg,
+                    AppTheme.darkBg,
+                    AppTheme.cardDarkAlt,
+                  ]
+                : const [
+                    AppTheme.lightCream,
+                    AppTheme.lightBg,
+                    AppTheme.lightSky,
+                  ],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              _TopStatusBar(
+                isOnline: isOnline,
+                isDayTime: values.isDayTime,
+                isSunny: values.isSunny,
+                isStormy: values.isStormy,
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 6, 20, 10),
-              child: Text(
-                'Last update:   ${values.lastUpdateText}',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: values.isDayTime
-                      ? const Color(0xFF8EA1AA)
-                      : Colors.white.withValues(alpha: 0.7),
-                  fontWeight: FontWeight.w500,
+              Expanded(
+                child: Transform.translate(
+                  offset: const Offset(0, -5),
+                  child: EnergyFlowWidget(values: values),
                 ),
               ),
-            ),
-            _BottomSummaryCards(
-              gridStatus: isGridConnected ? 'ON' : 'OFF',
-              gridConnected: isGridConnected,
-              powerKw: values.powerKw,
-            ),
-            const SizedBox(height: 14),
-          ],
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 6, 20, 9),
+                child: Text(
+                  'Last update:   ${values.lastUpdateText}',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark
+                        ? AppTheme.textLight
+                        : AppTheme.textMuted.withValues(alpha: 0.9),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              _BottomSummaryCards(
+                gridStatus: isGridConnected ? 'ON' : 'OFF',
+                gridConnected: isGridConnected,
+                powerKw: values.powerKw,
+              ),
+              const SizedBox(height: 14),
+            ],
+          ),
         ),
       ),
     );
@@ -80,6 +99,8 @@ class _BottomSummaryCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 22),
       child: Row(
@@ -96,7 +117,7 @@ class _BottomSummaryCards extends StatelessWidget {
             child: _SummaryCard(
               title: 'Power Today:',
               value: '${powerKw.toStringAsFixed(2)} kW',
-              valueColor: const Color(0xFF111827),
+              valueColor: isDark ? AppTheme.sunGlow : AppTheme.textDark,
             ),
           ),
         ],
@@ -118,18 +139,40 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final titleColor = isDark ? Colors.white : AppTheme.textDark;
+    final cardGradient = isDark
+        ? const [AppTheme.cardDarkAlt, AppTheme.cardDark]
+        : const [Colors.white, AppTheme.lightSurfaceTint];
+
     return Container(
       constraints: const BoxConstraints(minHeight: 112),
       padding: const EdgeInsets.fromLTRB(22, 18, 18, 18),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: cardGradient,
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isDark
+              ? AppTheme.primaryLight.withValues(alpha: 0.10)
+              : AppTheme.primary.withValues(alpha: 0.08),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 18,
-            offset: const Offset(0, 9),
+            color: (isDark ? Colors.black : AppTheme.primaryDark)
+                .withValues(alpha: isDark ? 0.30 : 0.13),
+            blurRadius: 28,
+            offset: const Offset(0, 14),
           ),
+          if (!isDark)
+            BoxShadow(
+              color: AppTheme.sunGlow.withValues(alpha: 0.16),
+              blurRadius: 26,
+              offset: const Offset(-10, -8),
+            ),
         ],
       ),
       child: Column(
@@ -138,8 +181,8 @@ class _SummaryCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
-              color: Color(0xFF111827),
+            style: TextStyle(
+              color: titleColor,
               fontSize: 18,
               fontWeight: FontWeight.w700,
             ),
@@ -179,7 +222,8 @@ class _TopStatusBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textColor = isDayTime ? const Color(0xFF607D8B) : Colors.white70;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? AppTheme.textLight : AppTheme.textMuted;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 8),
@@ -197,7 +241,9 @@ class _TopStatusBar extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 13,
-                color: isOnline ? AppTheme.primaryDark : textColor,
+                color: isOnline
+                    ? (isDark ? AppTheme.primaryLight : AppTheme.primaryDark)
+                    : textColor,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -228,6 +274,7 @@ class _WeatherChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final temp = context.watch<EnergyProvider>().currentTemp;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final icon = !isDayTime
         ? Icons.nightlight_round
         : isStormy
@@ -238,18 +285,24 @@ class _WeatherChip extends StatelessWidget {
     final iconColor = !isDayTime
         ? const Color(0xFFFFF8E1)
         : isStormy
-            ? const Color(0xFF5C6BC0)
+            ? AppTheme.secondary
             : isSunny
-                ? const Color(0xFFFFB300)
-                : const Color(0xFF64B5F6);
+                ? AppTheme.accent
+                : AppTheme.info;
 
     return Container(
       constraints: const BoxConstraints(minWidth: 74),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: isDayTime ? 0.76 : 0.16),
+        color: isDark
+            ? AppTheme.primaryLight.withValues(alpha: 0.10)
+            : Colors.white.withValues(alpha: 0.82),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.45)),
+        border: Border.all(
+          color: isDark
+              ? AppTheme.primaryLight.withValues(alpha: 0.18)
+              : AppTheme.sunGlow.withValues(alpha: 0.5),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -261,7 +314,7 @@ class _WeatherChip extends StatelessWidget {
             style: TextStyle(
               fontSize: isStormy ? 13 : 17,
               fontWeight: FontWeight.w800,
-              color: isDayTime ? Colors.black87 : Colors.white,
+              color: isDark ? Colors.white : AppTheme.textDark,
             ),
           ),
         ],

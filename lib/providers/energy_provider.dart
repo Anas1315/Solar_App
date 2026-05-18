@@ -86,6 +86,23 @@ class EnergyProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       _updateHomeWidget();
+      _checkUnreadAlerts();
+    }
+  }
+
+  void _checkUnreadAlerts() {
+    final unreadCount = _alerts.where((a) {
+      if (a is! Map) return false;
+      return !(a['isRead'] ?? a['read'] ?? false);
+    }).length;
+
+    if (unreadCount > 0) {
+      NotificationService().showNotification(
+        id: 999,
+        title: 'Unread Alerts',
+        body: 'You have $unreadCount unread alerts in your dashboard.',
+        priority: AlertPriority.medium,
+      );
     }
   }
 
@@ -237,11 +254,23 @@ class EnergyProvider extends ChangeNotifier {
         if (_events.length > 100) _events.removeLast();
         notifyListeners();
 
-        if (data is Map && data['type'] == 'danger') {
-          NotificationService().showCriticalAlert(
-            title: 'Alert',
-            body: data['message']?.toString() ?? 'System alert',
-          );
+        if (data is Map) {
+          final type = data['type']?.toString().toLowerCase();
+          final message = data['message']?.toString() ?? 'System event';
+          final title = type == 'danger' ? 'Critical Alert' : 'System Event';
+          
+          if (type == 'danger') {
+            NotificationService().showCriticalAlert(title: title, body: message);
+          } else if (type == 'warning') {
+            NotificationService().showNotification(
+              id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              title: '⚠️ Warning',
+              body: message,
+              priority: AlertPriority.medium,
+            );
+          } else {
+            NotificationService().showSystemNotification(title: title, body: message);
+          }
         }
       }
     });

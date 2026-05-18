@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 class Constants {
   // API Configuration
   static const String railwayBaseUrl =
-      'https://smartenergycontroller-production.up.railway.app';
+      'https://smartenergybackend-production.up.railway.app';
   static const String configuredBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
     defaultValue: railwayBaseUrl,
@@ -25,7 +25,7 @@ class Constants {
     'Content-Type': 'application/json',
   };
 
-  static const Duration timeout = Duration(seconds: 10);
+  static const Duration timeout = Duration(seconds: 15);
 
   // App Configuration
   static const String appName = 'Smart Energy Controller';
@@ -51,4 +51,12 @@ class Constants {
   static const String endpointSystemStatus = '/api/system-status';
   static const String endpointLastSeen = '/api/last-seen';
   static const String endpointUserMode = '/api/user-mode';
+  static const String endpointLogin = '/api/auth/login';
+  static const String endpointVerify2FA = '/api/auth/verify-2fa';
+  static const String endpointForgotPassword = '/api/auth/forgot-password';
+  static const String endpointResetPassword = '/api/auth/reset-password';
+  static const String endpointSignup = '/api/auth/signup';
+  static const String endpointMe = '/api/auth/me';
+  static const String endpointSetupStatus = '/api/auth/setup-status';
+  static const String endpointSetup = '/api/auth/setup';
 }
