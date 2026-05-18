@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:smart_energy_controller/providers/energy_provider.dart';
 import 'package:smart_energy_controller/models/alert_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:smart_energy_controller/services/notification_service.dart';
 
 class AlertsScreen extends StatefulWidget {
   const AlertsScreen({super.key});
@@ -11,11 +13,19 @@ class AlertsScreen extends StatefulWidget {
 }
 
 class _AlertsScreenState extends State<AlertsScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late TabController _tabController;
+  late AnimationController _bellController;
   String _searchQuery = '';
   AlertPriority? _filterPriority;
   bool _showOnlyUnread = false;
+
+  // Notification Settings
+  bool _desktopNotifications = true;
+  bool _criticalAlerts = true;
+  bool _powerAlerts = true;
+  bool _systemAlerts = true;
+  bool _dailySummary = true;
 
   @override
   void initState() {
@@ -24,12 +34,39 @@ class _AlertsScreenState extends State<AlertsScreen>
     _tabController.addListener(() {
       setState(() {});
     });
+
+    _bellController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    )..repeat(reverse: true);
+
+    _loadNotificationSettings();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _bellController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadNotificationSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _desktopNotifications = prefs.getBool('desktop_notifications') ?? true;
+      _criticalAlerts = prefs.getBool('critical_alerts') ?? true;
+      _powerAlerts = prefs.getBool('power_alerts') ?? true;
+      _systemAlerts = prefs.getBool('system_alerts') ?? true;
+      _dailySummary = prefs.getBool('daily_summary') ?? true;
+    });
+  }
+
+  Future<void> _saveSetting(String key, dynamic value) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (value is bool) await prefs.setBool(key, value);
+    if (value is int) await prefs.setInt(key, value);
+    if (value is double) await prefs.setDouble(key, value);
+    if (value is String) await prefs.setString(key, value);
   }
 
   @override
@@ -102,8 +139,28 @@ class _AlertsScreenState extends State<AlertsScreen>
             onPressed: _showFilterSheet,
           ),
           IconButton(
-            icon: const Icon(Icons.delete_sweep),
-            onPressed: _confirmClearAll,
+            icon: RotationTransition(
+              turns: Tween(begin: -0.05, end: 0.05).animate(_bellController),
+              child: const Icon(Icons.notifications_active, color: Colors.orange),
+            ),
+            onPressed: _showNotificationSettingsSheet,
+          ),
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'clear_all') {
+                _confirmClearAll();
+              }
+            },
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+              const PopupMenuItem<String>(
+                value: 'clear_all',
+                child: ListTile(
+                  leading: Icon(Icons.delete_sweep, color: Colors.red),
+                  title: Text('Clear All'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -838,6 +895,95 @@ class _AlertsScreenState extends State<AlertsScreen>
           ),
         ],
       ),
+    );
+  }
+
+  void _showNotificationSettingsSheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateSheet) {
+            return Container(
+              padding: const EdgeInsets.all(20),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Notification Settings',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+                    SwitchListTile(
+                      title: const Text('App Notifications'),
+                      subtitle: const Text('Show system notifications on your mobile device', style: TextStyle(fontSize: 12)),
+                      value: _desktopNotifications,
+                      onChanged: (v) {
+                        setStateSheet(() => _desktopNotifications = v);
+                        setState(() => _desktopNotifications = v);
+                        _saveSetting('desktop_notifications', v);
+                        if (v) NotificationService().requestPermission();
+                      },
+                      activeThumbColor: Theme.of(context).primaryColor,
+                    ),
+                    const Divider(),
+                    const Text('Alert Types', style: TextStyle(fontWeight: FontWeight.w500)),
+                    const SizedBox(height: 8),
+                    SwitchListTile(
+                      title: const Text('Critical Alerts'),
+                      subtitle: const Text('Power outages, system failures', style: TextStyle(fontSize: 12)),
+                      value: _criticalAlerts,
+                      onChanged: (v) {
+                        setStateSheet(() => _criticalAlerts = v);
+                        setState(() => _criticalAlerts = v);
+                        _saveSetting('critical_alerts', v);
+                      },
+                      activeThumbColor: Theme.of(context).primaryColor,
+                    ),
+                    SwitchListTile(
+                      title: const Text('Power Alerts'),
+                      subtitle: const Text('Grid status, solar availability', style: TextStyle(fontSize: 12)),
+                      value: _powerAlerts,
+                      onChanged: (v) {
+                        setStateSheet(() => _powerAlerts = v);
+                        setState(() => _powerAlerts = v);
+                        _saveSetting('power_alerts', v);
+                      },
+                      activeThumbColor: Theme.of(context).primaryColor,
+                    ),
+                    SwitchListTile(
+                      title: const Text('System Alerts'),
+                      subtitle: const Text('Updates, maintenance, commands', style: TextStyle(fontSize: 12)),
+                      value: _systemAlerts,
+                      onChanged: (v) {
+                        setStateSheet(() => _systemAlerts = v);
+                        setState(() => _systemAlerts = v);
+                        _saveSetting('system_alerts', v);
+                      },
+                      activeThumbColor: Theme.of(context).primaryColor,
+                    ),
+                    SwitchListTile(
+                      title: const Text('Daily Summary'),
+                      subtitle: const Text('Receive daily energy reports', style: TextStyle(fontSize: 12)),
+                      value: _dailySummary,
+                      onChanged: (v) {
+                        setStateSheet(() => _dailySummary = v);
+                        setState(() => _dailySummary = v);
+                        _saveSetting('daily_summary', v);
+                      },
+                      activeThumbColor: Theme.of(context).primaryColor,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

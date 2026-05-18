@@ -21,6 +21,12 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen>
     with SingleTickerProviderStateMixin {
 
+  // Profile Settings
+  String _username = 'User';
+  String _email = 'user@example.com';
+  String _phoneNumber = '+923001234567';
+  String _wifiName = 'Home_WiFi';
+
   // LDR Settings
   int _sunThreshold = Constants.ldrSunnyThreshold;
   int _darkThreshold = Constants.ldrDarkThreshold;
@@ -57,11 +63,17 @@ class _SettingsScreenState extends State<SettingsScreen>
     _loadSettings();
   }
 
-
-
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final user = authProvider.user;
+
     setState(() {
+      _username = prefs.getString('username') ?? user?.name ?? 'User';
+      _email = prefs.getString('email') ?? user?.email ?? 'user@example.com';
+      _phoneNumber = prefs.getString('phone_number') ?? '+923001234567';
+      _wifiName = prefs.getString('wifi_name') ?? 'Home_WiFi';
+
       _sunThreshold =
           prefs.getInt('sun_threshold') ?? Constants.ldrSunnyThreshold;
       _darkThreshold =
@@ -101,42 +113,389 @@ class _SettingsScreenState extends State<SettingsScreen>
     final user = authProvider.user;
     final isAdmin = user?.role == 'admin' || user?.role == 'master_admin';
 
-    // Define tabs dynamically
-    final List<Widget> tabs = [
-      const Tab(text: 'General', icon: Icon(Icons.settings, size: 18)),
-      if (isAdmin) const Tab(text: 'LDR', icon: Icon(Icons.sunny, size: 18)),
-      const Tab(text: 'Notifications', icon: Icon(Icons.notifications, size: 18)),
-      if (isAdmin) const Tab(text: 'System', icon: Icon(Icons.dns, size: 18)),
-      const Tab(text: 'About', icon: Icon(Icons.info, size: 18)),
-    ];
-
-    final List<Widget> tabViews = [
-      _buildGeneralSettings(themeProvider),
-      if (isAdmin) _buildLDRSettings(themeProvider, energyProvider),
-      _buildNotificationSettings(themeProvider),
-      if (isAdmin) _buildSystemSettings(themeProvider, energyProvider),
-      _buildAboutSettings(themeProvider),
-    ];
-
-    // Handle TabController length mismatch during role changes (or just use a new one)
-    return DefaultTabController(
-      length: tabs.length,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Settings'),
-          centerTitle: true,
-          bottom: TabBar(
-            isScrollable: true,
-            tabs: tabs,
-            indicatorColor: Theme.of(context).primaryColor,
-            labelColor: Theme.of(context).primaryColor,
-            unselectedLabelColor: Colors.grey,
+    return Scaffold(
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? AppTheme.darkBg
+          : AppTheme.lightBg,
+      appBar: AppBar(
+        title: const Text('Settings'),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 10.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSettingsTile(
+                title: 'Account',
+                subtitle: 'Profile, Email, Phone, WiFi',
+                icon: Icons.person,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => _buildAccountScreen())),
+              ),
+              const SizedBox(height: 16),
+              _buildSettingsTile(
+                title: 'Appearance',
+                subtitle: 'Theme, Animations, Real-time updates',
+                icon: Icons.palette,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => _buildAppearanceScreen())),
+              ),
+              if (isAdmin) ...[
+                const SizedBox(height: 16),
+                _buildSettingsTile(
+                  title: 'LDR Option',
+                  subtitle: 'Thresholds, Sensor readings',
+                  icon: Icons.sunny,
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => _buildLDRScreen())),
+                ),
+                const SizedBox(height: 16),
+                _buildSettingsTile(
+                  title: 'System Option',
+                  subtitle: 'Server config, Data management, Units',
+                  icon: Icons.dns,
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => _buildSystemScreen())),
+                ),
+              ],
+              const SizedBox(height: 16),
+              _buildSettingsTile(
+                title: 'About Option',
+                subtitle: 'Version, Features, Credits',
+                icon: Icons.info,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => _buildAboutScreen())),
+              ),
+            ],
           ),
         ),
-        body: TabBarView(
-          children: tabViews,
+      ),
+    );
+  }
+
+  Widget _buildSettingsTile({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.cardDark : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: AppTheme.cardShadow,
+        border: Border.all(
+          color: isDark
+              ? AppTheme.primaryLight.withValues(alpha: 0.12)
+              : Colors.white,
+          width: 2,
         ),
       ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        leading: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: AppTheme.primary.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: AppTheme.primary),
+        ),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text(subtitle, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+        trailing: const Icon(Icons.chevron_right, color: AppTheme.primary),
+        onTap: onTap,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      ),
+    );
+  }
+
+  Widget _buildAccountScreen() {
+    final authProvider = Provider.of<AuthProvider>(context);
+    return Scaffold(
+      appBar: AppBar(title: const Text('Account')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            _buildTextFieldTile(
+              title: 'Username',
+              subtitle: 'Edit your username',
+              value: _username,
+              icon: Icons.person,
+              onChanged: (v) {
+                setState(() => _username = v);
+                _saveSetting('username', v);
+              },
+            ),
+            _buildTextFieldTile(
+              title: 'Email',
+              subtitle: 'Edit your email',
+              value: _email,
+              icon: Icons.email,
+              onChanged: (v) {
+                setState(() => _email = v);
+                _saveSetting('email', v);
+              },
+            ),
+            _buildTextFieldTile(
+              title: 'Phone Number',
+              subtitle: 'Edit your phone number',
+              value: _phoneNumber,
+              icon: Icons.phone,
+              onChanged: (v) {
+                setState(() => _phoneNumber = v);
+                _saveSetting('phone_number', v);
+              },
+            ),
+            _buildTextFieldTile(
+              title: 'WiFi',
+              subtitle: 'Edit WiFi name',
+              value: _wifiName,
+              icon: Icons.wifi,
+              onChanged: (v) {
+                setState(() => _wifiName = v);
+                _saveSetting('wifi_name', v);
+              },
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context); // Close screen
+                  authProvider.logout();
+                },
+                icon: const Icon(Icons.logout),
+                label: const Text('Logout'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAppearanceScreen() {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    return Scaffold(
+      appBar: AppBar(title: const Text('Appearance')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            _buildThemeSetting(themeProvider),
+            const Divider(),
+            _buildSwitchTile(
+              title: 'Show Animations',
+              subtitle: 'Enable weather animations and transitions',
+              value: _showAnimations,
+              onChanged: (v) {
+                setState(() => _showAnimations = v);
+                _saveSetting('show_animations', v);
+              },
+            ),
+            _buildSwitchTile(
+              title: 'Real-time Updates',
+              subtitle: 'Enable live data streaming via WebSocket',
+              value: _showRealTimeUpdates,
+              onChanged: (v) {
+                setState(() => _showRealTimeUpdates = v);
+                _saveSetting('realtime_updates', v);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLDRScreen() {
+    final energyProvider = Provider.of<EnergyProvider>(context);
+    return Scaffold(
+      appBar: AppBar(title: const Text('LDR Option')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            _buildSwitchTile(
+              title: 'Enable LDR Control',
+              subtitle: 'Automatically switch to solar based on light intensity',
+              value: _ldrControlEnabled,
+              onChanged: (v) {
+                setState(() => _ldrControlEnabled = v);
+                energyProvider.sendCommand('LDR_ENABLED', v ? 1 : 0);
+                _saveSetting('ldr_control_enabled', v);
+              },
+            ),
+            const SizedBox(height: 16),
+            _buildSection(
+              title: 'Threshold Settings',
+              icon: Icons.tune,
+              children: [
+                _buildSliderSetting(
+                  title: 'Sunny Threshold',
+                  subtitle: 'Above this value = Sunny/Bright',
+                  value: _sunThreshold.toDouble(),
+                  min: 500,
+                  max: 4095,
+                  divisions: 72,
+                  onChanged: (v) {
+                    setState(() => _sunThreshold = v.toInt());
+                    _saveSetting('sun_threshold', _sunThreshold);
+                  },
+                  valueText: _sunThreshold.toString(),
+                  color: Colors.orange,
+                ),
+                _buildSliderSetting(
+                  title: 'Dark Threshold',
+                  subtitle: 'Below this value = Dark/Cloudy',
+                  value: _darkThreshold.toDouble(),
+                  min: 0,
+                  max: 3500,
+                  divisions: 70,
+                  onChanged: (v) {
+                    setState(() => _darkThreshold = v.toInt());
+                    _saveSetting('dark_threshold', _darkThreshold);
+                  },
+                  valueText: _darkThreshold.toString(),
+                  color: Colors.blue,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildSection(
+              title: 'Current Readings',
+              icon: Icons.sensors,
+              children: [
+                _buildInfoTile(
+                  title: 'Current LDR Value',
+                  value: energyProvider.currentData?.ldrValue.toString() ?? '0',
+                  icon: Icons.light_mode,
+                ),
+                _buildInfoTile(
+                  title: 'Sunny Status',
+                  value: (energyProvider.currentData?.isSunny ?? false) ? 'Sunny ☀️' : 'Not Sunny ☁️',
+                  icon: Icons.sunny,
+                ),
+                _buildInfoTile(
+                  title: 'Day/Night',
+                  value: (energyProvider.currentData?.isDayTime ?? true) ? 'Day Time' : 'Night Time',
+                  icon: Icons.brightness_6,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSystemScreen() {
+    final energyProvider = Provider.of<EnergyProvider>(context);
+    return Scaffold(
+      appBar: AppBar(title: const Text('System Option')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            _buildSection(
+              title: 'Server Configuration',
+              icon: Icons.dns,
+              children: [
+                _buildTextFieldTile(
+                  title: 'Local Server URL',
+                  subtitle: 'Your PC/Mac IP address',
+                  value: _localServerUrl,
+                  icon: Icons.computer,
+                  onChanged: (v) {
+                    setState(() => _localServerUrl = v);
+                    _saveSetting('local_server_url', v);
+                  },
+                ),
+                _buildTextFieldTile(
+                  title: 'Railway Server URL',
+                  subtitle: 'Cloud backup server',
+                  value: _railwayServerUrl,
+                  icon: Icons.cloud,
+                  onChanged: (v) {
+                    setState(() => _railwayServerUrl = v);
+                    _saveSetting('railway_server_url', v);
+                  },
+                ),
+                _buildSwitchTile(
+                  title: 'Use Railway Backup',
+                  subtitle: 'Send data to cloud server',
+                  value: _useRailway,
+                  onChanged: (v) {
+                    setState(() => _useRailway = v);
+                    _saveSetting('use_railway', v);
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildSection(
+              title: 'Data Management',
+              icon: Icons.storage,
+              children: [
+                _buildSliderSetting(
+                  title: 'Data Retention',
+                  subtitle: 'Keep history for (days)',
+                  value: _dataRetentionDays.toDouble(),
+                  min: 7,
+                  max: 365,
+                  divisions: 358,
+                  onChanged: (v) {
+                    setState(() => _dataRetentionDays = v.toInt());
+                    _saveSetting('data_retention_days', _dataRetentionDays);
+                  },
+                  valueText: '$_dataRetentionDays days',
+                ),
+                _buildSwitchTile(
+                  title: 'Auto Export',
+                  subtitle: 'Automatically export data weekly',
+                  value: _autoExport,
+                  onChanged: (v) {
+                    setState(() => _autoExport = v);
+                    _saveSetting('auto_export', v);
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildSection(
+              title: 'Units',
+              icon: Icons.straighten,
+              children: [
+                _buildDropdownSetting(
+                  title: 'Currency',
+                  subtitle: 'Currency symbol for costs',
+                  value: 'PKR (₨)',
+                  items: ['PKR (₨)', 'USD (\$)', 'EUR (€)', 'GBP (£)'],
+                  onChanged: (v) {
+                    _saveSetting('currency', v);
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAboutScreen() {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    return Scaffold(
+      appBar: AppBar(title: const Text('About Option')),
+      body: _buildAboutSettings(themeProvider),
     );
   }
 
@@ -405,78 +764,6 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
-  // ========== NOTIFICATION SETTINGS ==========
-
-  Widget _buildNotificationSettings(ThemeProvider themeProvider) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          _buildSection(
-            title: 'Push Notifications',
-            icon: Icons.notifications_active,
-            children: [
-              _buildSwitchTile(
-                title: 'App Notifications',
-                subtitle: 'Show system notifications on your mobile device',
-                value: _desktopNotifications,
-                onChanged: (v) {
-                  setState(() => _desktopNotifications = v);
-                  _saveSetting('desktop_notifications', v);
-                  if (v) NotificationService().requestPermission();
-                  _showSnackBar(
-                      v ? 'Notifications enabled' : 'Notifications disabled');
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _buildSection(
-            title: 'Alert Types',
-            icon: Icons.warning,
-            children: [
-              _buildSwitchTile(
-                title: 'Critical Alerts',
-                subtitle: 'Power outages, system failures',
-                value: _criticalAlerts,
-                onChanged: (v) {
-                  setState(() => _criticalAlerts = v);
-                  _saveSetting('critical_alerts', v);
-                },
-              ),
-              _buildSwitchTile(
-                title: 'Power Alerts',
-                subtitle: 'Grid status, solar availability',
-                value: _powerAlerts,
-                onChanged: (v) {
-                  setState(() => _powerAlerts = v);
-                  _saveSetting('power_alerts', v);
-                },
-              ),
-              _buildSwitchTile(
-                title: 'System Alerts',
-                subtitle: 'Updates, maintenance, commands',
-                value: _systemAlerts,
-                onChanged: (v) {
-                  setState(() => _systemAlerts = v);
-                  _saveSetting('system_alerts', v);
-                },
-              ),
-              _buildSwitchTile(
-                title: 'Daily Summary',
-                subtitle: 'Receive daily energy reports',
-                value: _dailySummary,
-                onChanged: (v) {
-                  setState(() => _dailySummary = v);
-                  _saveSetting('daily_summary', v);
-                },
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 
   // ========== SYSTEM SETTINGS ==========
 
