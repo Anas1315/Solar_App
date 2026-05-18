@@ -102,15 +102,24 @@ class _MainNavigationState extends State<MainNavigation> {
   }
 
   void _selectTab(int index) {
+    if (index == 3) {
+      final provider = Provider.of<EnergyProvider>(context, listen: false);
+      provider.markAllAlertsAsRead();
+    }
     setState(() {
       _currentIndex = index;
-      _screenForIndex(index);
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final energyProvider = context.watch<EnergyProvider>();
+    final unreadCount = energyProvider.alerts.where((a) {
+      if (a is! Map) return false;
+      return !(a['isRead'] ?? a['read'] ?? false);
+    }).length;
+
     return Scaffold(
       body: _screenForIndex(_currentIndex),
       bottomNavigationBar: CurvedNavigationBar(
@@ -123,12 +132,18 @@ class _MainNavigationState extends State<MainNavigation> {
               size: 30, color: _currentIndex == 1 ? Colors.white : Colors.grey),
           Icon(_currentIndex == 2 ? Icons.bar_chart : Icons.bar_chart_outlined,
               size: 30, color: _currentIndex == 2 ? Colors.white : Colors.grey),
-          Icon(
-              _currentIndex == 3
-                  ? Icons.notifications
-                  : Icons.notifications_none_outlined,
-              size: 30,
-              color: _currentIndex == 3 ? Colors.white : Colors.grey),
+          Badge(
+            isLabelVisible: unreadCount > 0,
+            label: Text('$unreadCount'),
+            backgroundColor: Colors.red,
+            textColor: Colors.white,
+            child: Icon(
+                _currentIndex == 3
+                    ? Icons.notifications
+                    : Icons.notifications_none_outlined,
+                size: 30,
+                color: _currentIndex == 3 ? Colors.white : Colors.grey),
+          ),
           Icon(_currentIndex == 4 ? Icons.settings : Icons.settings_outlined,
               size: 30, color: _currentIndex == 4 ? Colors.white : Colors.grey),
         ],

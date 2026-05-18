@@ -10,6 +10,7 @@ import 'package:smart_energy_controller/providers/theme_provider.dart';
 import 'package:smart_energy_controller/services/notification_service.dart';
 import 'package:smart_energy_controller/utils/constants.dart';
 import 'package:smart_energy_controller/utils/theme.dart';
+import 'package:smart_energy_controller/screens/profile_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -133,7 +134,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                 title: 'Account',
                 subtitle: 'Profile, Email, Phone, WiFi',
                 icon: Icons.person,
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => _buildAccountScreen())),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())),
               ),
               const SizedBox(height: 16),
               _buildSettingsTile(
@@ -206,78 +207,6 @@ class _SettingsScreenState extends State<SettingsScreen>
         trailing: const Icon(Icons.chevron_right, color: AppTheme.primary),
         onTap: onTap,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      ),
-    );
-  }
-
-  Widget _buildAccountScreen() {
-    final authProvider = Provider.of<AuthProvider>(context);
-    return Scaffold(
-      appBar: AppBar(title: const Text('Account')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _buildTextFieldTile(
-              title: 'Username',
-              subtitle: 'Edit your username',
-              value: _username,
-              icon: Icons.person,
-              onChanged: (v) {
-                setState(() => _username = v);
-                _saveSetting('username', v);
-              },
-            ),
-            _buildTextFieldTile(
-              title: 'Email',
-              subtitle: 'Edit your email',
-              value: _email,
-              icon: Icons.email,
-              onChanged: (v) {
-                setState(() => _email = v);
-                _saveSetting('email', v);
-              },
-            ),
-            _buildTextFieldTile(
-              title: 'Phone Number',
-              subtitle: 'Edit your phone number',
-              value: _phoneNumber,
-              icon: Icons.phone,
-              onChanged: (v) {
-                setState(() => _phoneNumber = v);
-                _saveSetting('phone_number', v);
-              },
-            ),
-            _buildTextFieldTile(
-              title: 'WiFi',
-              subtitle: 'Edit WiFi name',
-              value: _wifiName,
-              icon: Icons.wifi,
-              onChanged: (v) {
-                setState(() => _wifiName = v);
-                _saveSetting('wifi_name', v);
-              },
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pop(context); // Close screen
-                  authProvider.logout();
-                },
-                icon: const Icon(Icons.logout),
-                label: const Text('Logout'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

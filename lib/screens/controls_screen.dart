@@ -59,7 +59,7 @@ class _ControlsScreenState extends State<ControlsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Grid & Load Control',
+              Text('',
                   style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,

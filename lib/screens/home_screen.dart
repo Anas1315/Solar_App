@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:smart_energy_controller/providers/auth_provider.dart';
 import 'package:smart_energy_controller/providers/energy_provider.dart';
 import 'package:smart_energy_controller/utils/theme.dart';
 import 'package:smart_energy_controller/widgets/energy_flow_widget.dart';
+import 'package:smart_energy_controller/screens/profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -207,7 +209,7 @@ class _SummaryCard extends StatelessWidget {
   }
 }
 
-class _TopStatusBar extends StatelessWidget {
+class _TopStatusBar extends StatefulWidget {
   final bool isOnline;
   final bool isDayTime;
   final bool isSunny;
@@ -221,38 +223,129 @@ class _TopStatusBar extends StatelessWidget {
   });
 
   @override
+  State<_TopStatusBar> createState() => _TopStatusBarState();
+}
+
+class _TopStatusBarState extends State<_TopStatusBar>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _profileController;
+
+  @override
+  void initState() {
+    super.initState();
+    _profileController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _profileController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = isDark ? AppTheme.textLight : AppTheme.textMuted;
+    final authProvider = context.watch<AuthProvider>();
+    final email = authProvider.user?.email ?? 'U';
+    final firstLetter = email.isNotEmpty ? email[0].toUpperCase() : 'U';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 8),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Icon(
-            Icons.wifi,
-            color: isOnline ? AppTheme.primary : const Color(0xFF9E9E9E),
-            size: 20,
+          // Left: Wifi Status
+          Expanded(
+            flex: 2,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.wifi,
+                  color: widget.isOnline
+                      ? AppTheme.primary
+                      : const Color(0xFF9E9E9E),
+                  size: 20,
+                ),
+                const SizedBox(width: 5),
+                Flexible(
+                  child: Text(
+                    widget.isOnline ? 'Connected' : 'Disconnected',
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: widget.isOnline
+                          ? (isDark
+                              ? AppTheme.primaryLight
+                              : AppTheme.primaryDark)
+                          : textColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(width: 5),
-          Flexible(
-            child: Text(
-              isOnline ? 'Connected' : 'Disconnected',
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 13,
-                color: isOnline
-                    ? (isDark ? AppTheme.primaryLight : AppTheme.primaryDark)
-                    : textColor,
-                fontWeight: FontWeight.w600,
+
+          // Center: Weather Chip
+          Expanded(
+            flex: 3,
+            child: Center(
+              child: _WeatherChip(
+                isDayTime: widget.isDayTime,
+                isSunny: widget.isSunny,
+                isStormy: widget.isStormy,
               ),
             ),
           ),
-          const Spacer(),
-          _WeatherChip(
-            isDayTime: isDayTime,
-            isSunny: isSunny,
-            isStormy: isStormy,
+
+          // Right: Animated Profile Icon
+          Expanded(
+            flex: 2,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                  );
+                },
+                child: ScaleTransition(
+                  scale: Tween<double>(begin: 1.0, end: 1.15).animate(
+                    CurvedAnimation(
+                      parent: _profileController,
+                      curve: Curves.easeInOut,
+                    ),
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primary.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppTheme.primary.withValues(alpha: 0.3),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        firstLetter,
+                        style: const TextStyle(
+                          color: AppTheme.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),

@@ -197,6 +197,16 @@ class EnergyProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void markAllAlertsAsRead() {
+    _alerts = _alerts.map((alert) {
+      if (alert is! Map) return alert;
+      final copy = Map<String, dynamic>.from(alert);
+      copy['isRead'] = true;
+      return copy;
+    }).toList();
+    notifyListeners();
+  }
+
   void dismissAlert(String id) {
     _alerts = _alerts.where((alert) {
       if (alert is! Map) return true;

@@ -14,11 +14,7 @@ class AlertsScreen extends StatefulWidget {
 
 class _AlertsScreenState extends State<AlertsScreen>
     with TickerProviderStateMixin {
-  late TabController _tabController;
   late AnimationController _bellController;
-  String _searchQuery = '';
-  AlertPriority? _filterPriority;
-  bool _showOnlyUnread = false;
 
   // Notification Settings
   bool _desktopNotifications = true;
@@ -30,11 +26,6 @@ class _AlertsScreenState extends State<AlertsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _tabController.addListener(() {
-      setState(() {});
-    });
-
     _bellController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
@@ -45,7 +36,6 @@ class _AlertsScreenState extends State<AlertsScreen>
 
   @override
   void dispose() {
-    _tabController.dispose();
     _bellController.dispose();
     super.dispose();
   }
@@ -69,6 +59,103 @@ class _AlertsScreenState extends State<AlertsScreen>
     if (value is String) await prefs.setString(key, value);
   }
 
+  void _showNotificationSettingsSheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateSheet) {
+            return Container(
+              padding: const EdgeInsets.all(20),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Notification Settings',
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+                    SwitchListTile(
+                      title: const Text('App Notifications'),
+                      subtitle: const Text(
+                          'Show system notifications on your mobile device',
+                          style: TextStyle(fontSize: 12)),
+                      value: _desktopNotifications,
+                      onChanged: (v) {
+                        setStateSheet(() => _desktopNotifications = v);
+                        setState(() => _desktopNotifications = v);
+                        _saveSetting('desktop_notifications', v);
+                        if (v) NotificationService().requestPermission();
+                      },
+                      activeThumbColor: Theme.of(context).primaryColor,
+                    ),
+                    const Divider(),
+                    const Text('Alert Types',
+                        style: TextStyle(fontWeight: FontWeight.w500)),
+                    const SizedBox(height: 8),
+                    SwitchListTile(
+                      title: const Text('Critical Alerts'),
+                      subtitle: const Text('Power outages, system failures',
+                          style: TextStyle(fontSize: 12)),
+                      value: _criticalAlerts,
+                      onChanged: (v) {
+                        setStateSheet(() => _criticalAlerts = v);
+                        setState(() => _criticalAlerts = v);
+                        _saveSetting('critical_alerts', v);
+                      },
+                      activeThumbColor: Theme.of(context).primaryColor,
+                    ),
+                    SwitchListTile(
+                      title: const Text('Power Alerts'),
+                      subtitle: const Text('Grid status, solar availability',
+                          style: TextStyle(fontSize: 12)),
+                      value: _powerAlerts,
+                      onChanged: (v) {
+                        setStateSheet(() => _powerAlerts = v);
+                        setState(() => _powerAlerts = v);
+                        _saveSetting('power_alerts', v);
+                      },
+                      activeThumbColor: Theme.of(context).primaryColor,
+                    ),
+                    SwitchListTile(
+                      title: const Text('System Alerts'),
+                      subtitle: const Text('Updates, maintenance, commands',
+                          style: TextStyle(fontSize: 12)),
+                      value: _systemAlerts,
+                      onChanged: (v) {
+                        setStateSheet(() => _systemAlerts = v);
+                        setState(() => _systemAlerts = v);
+                        _saveSetting('system_alerts', v);
+                      },
+                      activeThumbColor: Theme.of(context).primaryColor,
+                    ),
+                    SwitchListTile(
+                      title: const Text('Daily Summary'),
+                      subtitle: const Text('Receive daily energy reports',
+                          style: TextStyle(fontSize: 12)),
+                      value: _dailySummary,
+                      onChanged: (v) {
+                        setStateSheet(() => _dailySummary = v);
+                        setState(() => _dailySummary = v);
+                        _saveSetting('daily_summary', v);
+                      },
+                      activeThumbColor: Theme.of(context).primaryColor,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final energyProvider = Provider.of<EnergyProvider>(context);
@@ -80,230 +167,64 @@ class _AlertsScreenState extends State<AlertsScreen>
         .map((alert) => AlertModel.fromJson(Map<String, dynamic>.from(alert)))
         .toList();
 
-    // Apply filters
-    final filteredAlerts = _applyFilters(alertModels);
-
-    // Split into unread and read
-    final unreadAlerts = filteredAlerts.where((a) => !a.isRead).toList();
-    final readAlerts = filteredAlerts.where((a) => a.isRead).toList();
-
-    final currentAlerts = _tabController.index == 0 ? unreadAlerts : readAlerts;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Alerts'),
         centerTitle: true,
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: [
-            Tab(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('Unread'),
-                  if (unreadAlerts.isNotEmpty) ...[
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        '${unreadAlerts.length}',
-                        style:
-                            const TextStyle(color: Colors.white, fontSize: 10),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const Tab(text: 'History'),
-          ],
-          indicatorColor: Theme.of(context).primaryColor,
-          labelColor: Theme.of(context).primaryColor,
-          unselectedLabelColor: Colors.grey,
-        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: _showSearchDialog,
-          ),
-          IconButton(
-            icon: Badge(
-              isLabelVisible: _filterPriority != null || _showOnlyUnread,
-              child: const Icon(Icons.filter_list),
+            icon: RotationTransition(
+              turns: Tween(begin: -0.05, end: 0.05).animate(_bellController),
+              child:
+                  const Icon(Icons.notifications_active, color: Colors.orange),
             ),
-            onPressed: _showFilterSheet,
+            onPressed: _showNotificationSettingsSheet,
           ),
           IconButton(
             icon: RotationTransition(
               turns: Tween(begin: -0.05, end: 0.05).animate(_bellController),
-              child: const Icon(Icons.notifications_active, color: Colors.orange),
+              child: const Icon(Icons.delete_forever, color: Colors.red),
             ),
-            onPressed: _showNotificationSettingsSheet,
+            onPressed: _confirmClearAll,
           ),
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'clear_all') {
-                _confirmClearAll();
-              }
-            },
-            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-              const PopupMenuItem<String>(
-                value: 'clear_all',
-                child: ListTile(
-                  leading: Icon(Icons.delete_sweep, color: Colors.red),
-                  title: Text('Clear All'),
-                  contentPadding: EdgeInsets.zero,
-                ),
+        ],
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: () => energyProvider.loadAllData(showLoading: false),
+                child: alertModels.isEmpty
+                    ? ListView(
+                        children: [
+                          SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.7,
+                            child: _buildEmptyState(true),
+                          ),
+                        ],
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: alertModels.length,
+                        itemBuilder: (context, index) {
+                          final alert = alertModels[index];
+                          return TweenAnimationBuilder<double>(
+                            tween: Tween<double>(begin: 0.0, end: 1.0),
+                            duration: const Duration(milliseconds: 500),
+                            curve: Curves.easeOutBack, // Bubble pop effect
+                            builder: (context, value, child) {
+                              return Transform.scale(
+                                  scale: value, child: child);
+                            },
+                            child: _buildAlertCard(alert, energyProvider),
+                          );
+                        },
+                      ),
               ),
-            ],
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          _buildStatsBar(alertModels, unreadAlerts.length),
-          if (_searchQuery.isNotEmpty ||
-              _filterPriority != null ||
-              _showOnlyUnread)
-            _buildActiveFiltersBar(),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: () => energyProvider.loadAllData(showLoading: false),
-              child: currentAlerts.isEmpty
-                  ? ListView(
-                      children: [
-                        SizedBox(
-                          height: MediaQuery.of(context).size.height * 0.58,
-                          child: _buildEmptyState(_tabController.index == 0),
-                        ),
-                      ],
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(12),
-                      itemCount: currentAlerts.length,
-                      itemBuilder: (context, index) {
-                        return _buildAlertCard(
-                          currentAlerts[index],
-                          energyProvider,
-                        );
-                      },
-                    ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ========== FILTER LOGIC ==========
-
-  List<AlertModel> _applyFilters(List<AlertModel> alerts) {
-    var result = alerts;
-
-    if (_filterPriority != null) {
-      result = result.where((a) => a.priority == _filterPriority).toList();
-    }
-
-    if (_showOnlyUnread) {
-      result = result.where((a) => !a.isRead).toList();
-    }
-
-    if (_searchQuery.isNotEmpty) {
-      final query = _searchQuery.toLowerCase();
-      result = result
-          .where((a) =>
-              a.message.toLowerCase().contains(query) ||
-              (a.details?.toLowerCase().contains(query) ?? false))
-          .toList();
-    }
-
-    return result;
-  }
-
-  // ========== STATS BAR ==========
-
-  Widget _buildStatsBar(List<AlertModel> alerts, int unreadCount) {
-    final highCount =
-        alerts.where((a) => a.priority == AlertPriority.high).length;
-    final mediumCount =
-        alerts.where((a) => a.priority == AlertPriority.medium).length;
-    final lowCount =
-        alerts.where((a) => a.priority == AlertPriority.low).length;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        border: Border(
-          bottom: BorderSide(color: Colors.grey.withValues(alpha: 0.1)),
+          ],
         ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildStatItem('Total', alerts.length.toString(), Icons.notifications,
-              Colors.grey),
-          _buildStatItem('Unread', unreadCount.toString(),
-              Icons.mark_email_unread, Colors.blue),
-          _buildStatItem('High', highCount.toString(), Icons.error, Colors.red),
-          _buildStatItem(
-              'Medium', mediumCount.toString(), Icons.warning, Colors.orange),
-          _buildStatItem('Low', lowCount.toString(), Icons.info, Colors.blue),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatItem(
-      String label, String value, IconData icon, Color color) {
-    return Column(
-      children: [
-        Icon(icon, size: 20, color: color),
-        const SizedBox(height: 4),
-        Text(value,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        Text(label, style: TextStyle(fontSize: 10, color: Colors.grey[600])),
-      ],
-    );
-  }
-
-  // ========== ACTIVE FILTERS BAR ==========
-
-  Widget _buildActiveFiltersBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Wrap(
-        spacing: 8,
-        children: [
-          if (_searchQuery.isNotEmpty)
-            Chip(
-              label: Text('Search: $_searchQuery'),
-              onDeleted: () => setState(() => _searchQuery = ''),
-              deleteIcon: const Icon(Icons.close, size: 16),
-              backgroundColor:
-                  Theme.of(context).primaryColor.withValues(alpha: 0.1),
-            ),
-          if (_filterPriority != null)
-            Chip(
-              label: Text(
-                  'Priority: ${_filterPriority.toString().split('.').last.toUpperCase()}'),
-              onDeleted: () => setState(() => _filterPriority = null),
-              deleteIcon: const Icon(Icons.close, size: 16),
-              backgroundColor: Colors.orange.withValues(alpha: 0.1),
-            ),
-          if (_showOnlyUnread)
-            Chip(
-              label: const Text('Unread Only'),
-              onDeleted: () => setState(() => _showOnlyUnread = false),
-              deleteIcon: const Icon(Icons.close, size: 16),
-              backgroundColor: Colors.blue.withValues(alpha: 0.1),
-            ),
-        ],
       ),
     );
   }
@@ -506,127 +427,6 @@ class _AlertsScreenState extends State<AlertsScreen>
   }
 
   // ========== DIALOGS & SHEETS ==========
-
-  void _showSearchDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Search Alerts'),
-        content: TextField(
-          autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'Search by message or details...',
-            prefixIcon: Icon(Icons.search),
-          ),
-          onChanged: (value) => setState(() => _searchQuery = value),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              setState(() => _searchQuery = '');
-              Navigator.pop(context);
-            },
-            child: const Text('Clear'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Done'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showFilterSheet() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setStateSheet) {
-            return Container(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Filter Alerts',
-                      style:
-                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-                  const Text('Priority',
-                      style: TextStyle(fontWeight: FontWeight.w500)),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    children: AlertPriority.values.map((priority) {
-                      return FilterChip(
-                        label: Text(
-                            priority.toString().split('.').last.toUpperCase()),
-                        selected: _filterPriority == priority,
-                        onSelected: (selected) {
-                          setStateSheet(() =>
-                              _filterPriority = selected ? priority : null);
-                          setState(() =>
-                              _filterPriority = selected ? priority : null);
-                        },
-                        selectedColor:
-                            _getPriorityColor(priority).withValues(alpha: 0.2),
-                        checkmarkColor: _getPriorityColor(priority),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text('Status',
-                      style: TextStyle(fontWeight: FontWeight.w500)),
-                  const SizedBox(height: 8),
-                  FilterChip(
-                    label: const Text('UNREAD ONLY'),
-                    selected: _showOnlyUnread,
-                    onSelected: (selected) {
-                      setStateSheet(() => _showOnlyUnread = selected);
-                      setState(() => _showOnlyUnread = selected);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () {
-                            setStateSheet(() {
-                              _filterPriority = null;
-                              _showOnlyUnread = false;
-                            });
-                            setState(() {
-                              _filterPriority = null;
-                              _showOnlyUnread = false;
-                            });
-                            Navigator.pop(context);
-                          },
-                          child: const Text('Clear Filters'),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Apply'),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
 
   void _showAlertDetails(AlertModel alert, EnergyProvider provider) {
     showModalBottomSheet(
@@ -895,95 +695,6 @@ class _AlertsScreenState extends State<AlertsScreen>
           ),
         ],
       ),
-    );
-  }
-
-  void _showNotificationSettingsSheet() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setStateSheet) {
-            return Container(
-              padding: const EdgeInsets.all(20),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Notification Settings',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 16),
-                    SwitchListTile(
-                      title: const Text('App Notifications'),
-                      subtitle: const Text('Show system notifications on your mobile device', style: TextStyle(fontSize: 12)),
-                      value: _desktopNotifications,
-                      onChanged: (v) {
-                        setStateSheet(() => _desktopNotifications = v);
-                        setState(() => _desktopNotifications = v);
-                        _saveSetting('desktop_notifications', v);
-                        if (v) NotificationService().requestPermission();
-                      },
-                      activeThumbColor: Theme.of(context).primaryColor,
-                    ),
-                    const Divider(),
-                    const Text('Alert Types', style: TextStyle(fontWeight: FontWeight.w500)),
-                    const SizedBox(height: 8),
-                    SwitchListTile(
-                      title: const Text('Critical Alerts'),
-                      subtitle: const Text('Power outages, system failures', style: TextStyle(fontSize: 12)),
-                      value: _criticalAlerts,
-                      onChanged: (v) {
-                        setStateSheet(() => _criticalAlerts = v);
-                        setState(() => _criticalAlerts = v);
-                        _saveSetting('critical_alerts', v);
-                      },
-                      activeThumbColor: Theme.of(context).primaryColor,
-                    ),
-                    SwitchListTile(
-                      title: const Text('Power Alerts'),
-                      subtitle: const Text('Grid status, solar availability', style: TextStyle(fontSize: 12)),
-                      value: _powerAlerts,
-                      onChanged: (v) {
-                        setStateSheet(() => _powerAlerts = v);
-                        setState(() => _powerAlerts = v);
-                        _saveSetting('power_alerts', v);
-                      },
-                      activeThumbColor: Theme.of(context).primaryColor,
-                    ),
-                    SwitchListTile(
-                      title: const Text('System Alerts'),
-                      subtitle: const Text('Updates, maintenance, commands', style: TextStyle(fontSize: 12)),
-                      value: _systemAlerts,
-                      onChanged: (v) {
-                        setStateSheet(() => _systemAlerts = v);
-                        setState(() => _systemAlerts = v);
-                        _saveSetting('system_alerts', v);
-                      },
-                      activeThumbColor: Theme.of(context).primaryColor,
-                    ),
-                    SwitchListTile(
-                      title: const Text('Daily Summary'),
-                      subtitle: const Text('Receive daily energy reports', style: TextStyle(fontSize: 12)),
-                      value: _dailySummary,
-                      onChanged: (v) {
-                        setStateSheet(() => _dailySummary = v);
-                        setState(() => _dailySummary = v);
-                        _saveSetting('daily_summary', v);
-                      },
-                      activeThumbColor: Theme.of(context).primaryColor,
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
     );
   }
 
