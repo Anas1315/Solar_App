@@ -13,6 +13,7 @@ import 'package:smart_energy_controller/screens/alerts_screen.dart';
 import 'package:smart_energy_controller/screens/settings_screen.dart';
 import 'package:smart_energy_controller/services/notification_service.dart';
 import 'package:smart_energy_controller/utils/theme.dart';
+import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -112,145 +113,31 @@ class _MainNavigationState extends State<MainNavigation> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       body: _screenForIndex(_currentIndex),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: isDark ? AppTheme.cardDark : Colors.white,
-          border: Border(
-            top: BorderSide(
-              color: isDark
-                  ? AppTheme.primaryLight.withValues(alpha: 0.08)
-                  : AppTheme.primary.withValues(alpha: 0.10),
-            ),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: (isDark ? Colors.black : AppTheme.primaryDark)
-                  .withValues(alpha: isDark ? 0.32 : 0.12),
-              blurRadius: 28,
-              offset: const Offset(0, -8),
-            ),
-            if (!isDark)
-              BoxShadow(
-                color: AppTheme.sunGlow.withValues(alpha: 0.14),
-                blurRadius: 26,
-                offset: const Offset(0, -6),
-              ),
-          ],
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _NavItem(
-                    icon: Icons.home_outlined,
-                    activeIcon: Icons.home,
-                    label: 'Home',
-                    index: 0,
-                    current: _currentIndex,
-                    onTap: _selectTab),
-                _NavItem(
-                    icon: Icons.tune_outlined,
-                    activeIcon: Icons.tune,
-                    label: 'Controls',
-                    index: 1,
-                    current: _currentIndex,
-                    onTap: _selectTab),
-                _NavItem(
-                    icon: Icons.bar_chart_outlined,
-                    activeIcon: Icons.bar_chart,
-                    label: 'Analytics',
-                    index: 2,
-                    current: _currentIndex,
-                    onTap: _selectTab),
-                _NavItem(
-                    icon: Icons.notifications_none_outlined,
-                    activeIcon: Icons.notifications,
-                    label: 'Alerts',
-                    index: 3,
-                    current: _currentIndex,
-                    onTap: _selectTab),
-                _NavItem(
-                    icon: Icons.settings_outlined,
-                    activeIcon: Icons.settings,
-                    label: 'Settings',
-                    index: 4,
-                    current: _currentIndex,
-                    onTap: _selectTab),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final IconData activeIcon;
-  final String label;
-  final int index;
-  final int current;
-  final Function(int) onTap;
-
-  const _NavItem({
-    required this.icon,
-    required this.activeIcon,
-    required this.label,
-    required this.index,
-    required this.current,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isActive = index == current;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final activeColor = isDark ? AppTheme.primaryLight : AppTheme.primaryDark;
-    final inactiveColor =
-        isDark ? const Color(0xFF86A4AD) : const Color(0xFF78909C);
-
-    return GestureDetector(
-      onTap: () => onTap(index),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: isActive
-              ? (isDark ? AppTheme.primaryLight : AppTheme.primary)
-                  .withValues(alpha: isDark ? 0.16 : 0.11)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(24),
-          border: isActive
-              ? Border.all(
-                  color: activeColor.withValues(alpha: isDark ? 0.20 : 0.10),
-                )
-              : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isActive ? activeIcon : icon,
-              color: isActive ? activeColor : inactiveColor,
-              size: 24,
-            ),
-            if (isActive) ...[
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  color: activeColor,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                ),
-              ),
-            ],
-          ],
-        ),
+      bottomNavigationBar: CurvedNavigationBar(
+        index: _currentIndex,
+        height: 60.0,
+        items: <Widget>[
+          Icon(_currentIndex == 0 ? Icons.home : Icons.home_outlined,
+              size: 30, color: _currentIndex == 0 ? Colors.white : Colors.grey),
+          Icon(_currentIndex == 1 ? Icons.tune : Icons.tune_outlined,
+              size: 30, color: _currentIndex == 1 ? Colors.white : Colors.grey),
+          Icon(_currentIndex == 2 ? Icons.bar_chart : Icons.bar_chart_outlined,
+              size: 30, color: _currentIndex == 2 ? Colors.white : Colors.grey),
+          Icon(
+              _currentIndex == 3
+                  ? Icons.notifications
+                  : Icons.notifications_none_outlined,
+              size: 30,
+              color: _currentIndex == 3 ? Colors.white : Colors.grey),
+          Icon(_currentIndex == 4 ? Icons.settings : Icons.settings_outlined,
+              size: 30, color: _currentIndex == 4 ? Colors.white : Colors.grey),
+        ],
+        color: isDark ? AppTheme.cardDark : Colors.white,
+        buttonBackgroundColor: AppTheme.primary,
+        backgroundColor: isDark ? AppTheme.darkBg : const Color(0xFFF5F7FA),
+        animationCurve: Curves.easeInOut,
+        animationDuration: const Duration(milliseconds: 300),
+        onTap: _selectTab,
       ),
     );
   }
