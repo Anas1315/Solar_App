@@ -35,18 +35,35 @@ class AlertModel extends Equatable {
     this.isRead = false,
   });
 
-  /// Factory constructor for creating an AlertModel from JSON
   factory AlertModel.fromJson(Map<String, dynamic> json) {
+    final alertId = json['id'];
+    DateTime parsedTime = DateTime.now();
+
+    if (alertId is num && alertId > 1000000000000) {
+      parsedTime = DateTime.fromMillisecondsSinceEpoch(alertId.toInt());
+    } else if (alertId is String) {
+      final numericId = int.tryParse(alertId);
+      if (numericId != null && numericId > 1000000000000) {
+        parsedTime = DateTime.fromMillisecondsSinceEpoch(numericId);
+      } else {
+        parsedTime = json['timestamp'] != null
+            ? _parseTimestamp(json['timestamp'], json['date'])
+            : DateTime.now();
+      }
+    } else {
+      parsedTime = json['timestamp'] != null
+          ? _parseTimestamp(json['timestamp'], json['date'])
+          : DateTime.now();
+    }
+
     return AlertModel(
-      id: json['id']?.toString() ??
+      id: alertId?.toString() ??
           DateTime.now().millisecondsSinceEpoch.toString(),
       type: _parseAlertType(json['type']),
       priority: _parseAlertPriority(json['priority']),
       message: json['message']?.toString() ?? 'Unknown alert',
       details: json['details']?.toString(),
-      timestamp: json['timestamp'] != null
-          ? _parseTimestamp(json['timestamp'], json['date'])
-          : DateTime.now(),
+      timestamp: parsedTime,
       isRead: _parseBool(json['isRead'] ?? json['read']),
     );
   }

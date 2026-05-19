@@ -195,6 +195,7 @@ class EnergyProvider extends ChangeNotifier {
       return copy;
     }).toList();
     notifyListeners();
+    _apiService.markAlertRead(id);
   }
 
   void markAllAlertsAsRead() {
@@ -205,6 +206,7 @@ class EnergyProvider extends ChangeNotifier {
       return copy;
     }).toList();
     notifyListeners();
+    _apiService.markAlertsRead();
   }
 
   void dismissAlert(String id) {
@@ -213,11 +215,13 @@ class EnergyProvider extends ChangeNotifier {
       return alert['id']?.toString() != id;
     }).toList();
     notifyListeners();
+    _apiService.markAlertRead(id); // Dismissing is also treated as read/acknowledged
   }
 
   void clearAlerts() {
     _alerts = [];
     notifyListeners();
+    _apiService.clearEvents();
   }
 
   void refresh() {

@@ -155,4 +155,37 @@ class ApiService {
       return false;
     }
   }
+
+  Future<bool> markAlertsRead() async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http
+          .post(
+            Uri.parse('${Constants.baseUrl}${Constants.endpointMarkAlertsRead}'),
+            headers: headers,
+          )
+          .timeout(Constants.timeout);
+
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<bool> markAlertRead(String id) async {
+    try {
+      final headers = await _getHeaders();
+      final response = await http
+          .post(
+            Uri.parse('${Constants.baseUrl}${Constants.endpointMarkAlertRead}'),
+            headers: headers,
+            body: json.encode({'id': id}),
+          )
+          .timeout(Constants.timeout);
+
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
 }

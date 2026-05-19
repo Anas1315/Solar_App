@@ -48,6 +48,8 @@ class Constants {
   static const String endpointAlerts = '/api/alerts';
   static const String endpointCommand = '/api/command';
   static const String endpointClearEvents = '/api/clear-events';
+  static const String endpointMarkAlertsRead = '/api/mark-alerts-read';
+  static const String endpointMarkAlertRead = '/api/mark-alert-read';
   static const String endpointSystemStatus = '/api/system-status';
   static const String endpointLastSeen = '/api/last-seen';
   static const String endpointUserMode = '/api/user-mode';

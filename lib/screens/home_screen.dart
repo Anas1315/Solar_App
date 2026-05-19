@@ -315,30 +315,33 @@ class _TopStatusBarState extends State<_TopStatusBar>
                     MaterialPageRoute(builder: (_) => const ProfileScreen()),
                   );
                 },
-                child: ScaleTransition(
-                  scale: Tween<double>(begin: 1.0, end: 1.15).animate(
-                    CurvedAnimation(
-                      parent: _profileController,
-                      curve: Curves.easeInOut,
-                    ),
-                  ),
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primary.withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: AppTheme.primary.withValues(alpha: 0.3),
-                        width: 1.5,
+                child: Transform.translate(
+                  offset: const Offset(40, 0), // Move 8 pixels right
+                  child: ScaleTransition(
+                    scale: Tween<double>(begin: 0.9, end: 1.10).animate(
+                      CurvedAnimation(
+                        parent: _profileController,
+                        curve: Curves.easeInOut,
                       ),
                     ),
-                    child: Center(
-                      child: Text(
-                        firstLetter,
-                        style: const TextStyle(
-                          color: AppTheme.primary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primary.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppTheme.primary.withValues(alpha: 0.3),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          firstLetter,
+                          style: const TextStyle(
+                            color: AppTheme.primary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                     ),
@@ -385,7 +388,7 @@ class _WeatherChip extends StatelessWidget {
 
     return Container(
       constraints: const BoxConstraints(minWidth: 74),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: isDark
             ? AppTheme.primaryLight.withValues(alpha: 0.10)
